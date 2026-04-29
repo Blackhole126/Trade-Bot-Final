@@ -1,0 +1,54 @@
+{
+  "date": "2026-03-27",
+  "user_id": "test_user",
+  "performance_metrics": {
+    "total_trades": 2,
+    "winners": 1,
+    "losers": 1,
+    "win_rate": 50.0,
+    "avg_winner": 3000.0,
+    "avg_loser": 1500.0,
+    "profit_factor": 2.0,
+    "net_pnl": 1500.0,
+    "net_pnl_percent": 1.5
+  },
+  "discipline_metrics": {
+    "overall_score": 99.25,
+    "checklist_compliance": 100.0,
+    "stop_loss_adherence": 100.0,
+    "exit_discipline": 100.0,
+    "average_discipline_score": 9.5,
+    "total_trades": 2,
+    "grade": "A+ (Excellent)"
+  },
+  "violations_by_type": {},
+  "trades": {
+    "1": {
+      "entry": {
+        "symbol": "RELIANCE.NS",
+        "direction": "BUY",
+        "pre_entry_checklist_completed": true
+      },
+      "exit": {
+        "pnl_absolute": 3000.0,
+        "stop_was_respected": true,
+        "exit_was_disciplined": true,
+        "discipline_score": 10
+      }
+    },
+    "2": {
+      "entry": {
+        "symbol": "TATAMOTORS.NS",
+        "direction": "BUY",
+        "pre_entry_checklist_completed": true
+      },
+      "exit": {
+        "pnl_absolute": -1500.0,
+        "stop_was_respected": true,
+        "exit_was_disciplined": true,
+        "discipline_score": 9
+      }
+    }
+  },
+  "generated_at": "2026-03-27T12:06:45.347027"
+}

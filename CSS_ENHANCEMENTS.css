@@ -1,0 +1,478 @@
+/* ============================================================================
+   RESPONSIVE CSS ENHANCEMENTS - PRODUCTION READY
+   ============================================================================
+   Pure CSS with no Tailwind @apply directives
+   Handles responsive design, dark mode, and accessibility
+   ============================================================================ */
+
+/* ============================================================================
+   CSS VARIABLES - DESIGN TOKENS
+   ============================================================================ */
+
+:root {
+  /* Colors - Light mode defaults */
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Typography */
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.25rem;
+  
+  /* Transitions */
+  --transition-normal: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+}
+
+/* ============================================================================
+   RESPONSIVE BUTTON STYLES - TOUCH FRIENDLY (44px minimum)
+   ============================================================================ */
+
+.btn,
+button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all var(--transition-normal);
+  outline: none;
+  border: none;
+  
+  /* Mobile-First: Larger touch targets (44px WCAG standard) */
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: var(--fs-sm);
+  min-height: 44px;
+  min-width: 44px;
+  
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  
+  /* Touch Device Optimization */
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button:focus,
+.btn:focus {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Responsive Button Sizes */
+@media (max-width: 480px) {
+  .btn,
+  button {
+    padding: 0.75rem 1rem;
+    min-height: 48px; /* Extra touch-friendly on mobile */
+    font-size: var(--fs-sm);
+    border-radius: 0.375rem;
+  }
+  
+  .btn-sm {
+    padding: 0.5rem 0.75rem;
+    min-height: 40px;
+  }
+  
+  .btn-lg {
+    padding: 1rem 1.5rem;
+    min-height: 52px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .btn,
+  button {
+    padding: 0.75rem 1.25rem;
+    min-height: 44px;
+    font-size: var(--fs-sm);
+  }
+}
+
+@media (min-width: 769px) {
+  .btn,
+  button {
+    padding: 0.75rem 1.5rem;
+    min-height: 44px;
+    font-size: var(--fs-base);
+  }
+}
+
+/* Button Variants */
+
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-600);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--color-primary-700);
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background-color: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+  border: 1px solid var(--color-neutral-200);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-neutral-200);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background-color: var(--color-neutral-300);
+}
+
+.btn-danger {
+  background-color: var(--color-error-500);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-error-600);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: var(--color-error-700);
+}
+
+.btn-success {
+  background-color: var(--color-success-500);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--color-success-600);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success:active:not(:disabled) {
+  background-color: var(--color-success-700);
+}
+
+/* Full-width button on mobile */
+.btn-block {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .btn-block-mobile {
+    width: 100%;
+    display: block;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE FORM STYLES - TOUCH FRIENDLY
+   ============================================================================ */
+
+.input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: var(--fs-base);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.5rem;
+  background-color: white;
+  color: var(--color-neutral-900);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  
+  /* Touch Device Optimization */
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-neutral-500);
+}
+
+.input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: var(--color-neutral-100);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Input Error State */
+.input-error,
+input.error,
+textarea.error,
+select.error {
+  border-color: var(--color-error-500);
+}
+
+.input-error:focus,
+input.error:focus,
+textarea.error:focus,
+select.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Input Success State */
+.input-success,
+input.success,
+textarea.success,
+select.success {
+  border-color: var(--color-success-500);
+}
+
+.input-success:focus,
+input.success:focus,
+textarea.success:focus,
+select.success:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Form Label */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  font-size: var(--fs-sm);
+}
+
+/* ============================================================================
+   RESPONSIVE CARDS & CONTAINERS
+   ============================================================================ */
+
+.card {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-neutral-200);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+}
+
+.card-hover {
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+/* ============================================================================
+   RESPONSIVE GRID LAYOUTS
+   ============================================================================ */
+
+.grid-responsive {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE SPACING UTILITIES
+   ============================================================================ */
+
+.p-responsive {
+  padding: 1rem;
+}
+
+@media (min-width: 481px) {
+  .p-responsive {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .p-responsive {
+    padding: 2rem;
+  }
+}
+
+/* ============================================================================
+   MOBILE & DEVICE OPTIMIZATIONS
+   ============================================================================ */
+
+/* Safe area for notched devices (iPhone X+) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent zoom on iOS input focus (16px+ triggers zoom prevention) */
+@media (max-width: 480px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-neutral-100: #1f2937;
+    --color-neutral-200: #374151;
+    --color-neutral-700: #e5e7eb;
+    --color-neutral-900: #f3f4f6;
+  }
+  
+  body {
+    background-color: var(--color-neutral-900);
+    color: var(--color-neutral-100);
+  }
+  
+  .input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    border-color: var(--color-neutral-600);
+    background-color: var(--color-neutral-800);
+    color: white;
+  }
+  
+  .btn-secondary {
+    background-color: var(--color-neutral-800);
+    color: white;
+    border-color: var(--color-neutral-600);
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-neutral-700);
+  }
+  
+  .card {
+    background-color: var(--color-neutral-800);
+    border-color: var(--color-neutral-700);
+  }
+  
+  label {
+    color: var(--color-neutral-300);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  button,
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  input,
+  textarea,
+  select {
+    border-width: 2px;
+  }
+}

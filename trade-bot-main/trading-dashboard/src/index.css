@@ -1,0 +1,373 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme-specific base styles */
+:root {
+  /* Light theme variables */
+  --light-bg-primary: #ffffff;
+  --light-bg-secondary: #f8fafc;
+  --light-text-primary: #1e293b;
+  --light-text-secondary: #64748b;
+  --light-border: #e2e8f0;
+}
+
+/* Apply theme-specific styles */
+.light {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+  --tw-text-opacity: 1;
+  color: rgb(17 24 39 / var(--tw-text-opacity)); /* text-gray-900 */
+}
+
+/* Light theme overrides for dark-specific classes */
+.light .dark\:bg-slate-800\/80 { background-color: rgb(243 244 246 / 0.8) !important; }
+.light .dark\:bg-slate-900\/80 { background-color: rgb(255 255 255 / 0.8) !important; }
+.light .dark\:bg-slate-800\/50 { background-color: rgb(243 244 246 / 0.5) !important; }
+.light .dark\:bg-slate-900\/50 { background-color: rgb(255 255 255 / 0.5) !important; }
+.light .dark\:bg-slate-900\/95 { background-color: rgb(255 255 255 / 0.95) !important; }
+.light .dark\:bg-slate-900 { background-color: rgb(255 255 255) !important; }
+.light .dark\:bg-gray-100 { background-color: rgb(243 244 246) !important; }
+.light .dark\:bg-gray-200 { background-color: rgb(229 231 235) !important; }
+.light .dark\:text-white { color: rgb(17 24 39) !important; font-weight: 500; }
+.light .dark\:text-gray-300 { color: rgb(75 85 99) !important; }
+.light .dark\:text-gray-400 { color: rgb(75 85 99) !important; }
+.light .dark\:text-gray-900 { color: rgb(17 24 39) !important; font-weight: 500; }
+.light .dark\:border-slate-700 { border-color: rgb(226 232 240) !important; }
+.light .dark\:border-slate-700\/50 { border-color: rgb(226 232 240 / 0.5) !important; }
+.light .dark\:border-slate-600\/50 { border-color: rgb(209 213 219 / 0.5) !important; }
+.light .dark\:border-slate-800 { border-color: rgb(226 232 240) !important; }
+.light .dark\:border-gray-200 { border-color: rgb(234 237 243) !important; }
+.light .dark\:backdrop-blur-sm { backdrop-filter: blur(4px) !important; }
+
+/* Additional light theme overrides for common dark mode patterns */
+.light .bg-slate-800\/80 { background-color: rgb(243 244 246 / 0.8) !important; }
+.light .bg-slate-900\/80 { background-color: rgb(255 255 255 / 0.8) !important; }
+.light .bg-slate-800\/50 { background-color: rgb(243 244 246 / 0.5) !important; }
+.light .bg-slate-900\/50 { background-color: rgb(255 255 255 / 0.5) !important; }
+.light .bg-slate-900\/95 { background-color: rgb(255 255 255 / 0.95) !important; }
+.light .bg-slate-900 { background-color: rgb(255 255 255) !important; }
+.light .bg-slate-700\/50 { background-color: rgb(241 245 249 / 0.5) !important; }
+.light .bg-slate-600\/50 { background-color: rgb(241 245 249 / 0.5) !important; }
+.light .text-gray-300 { color: rgb(75 85 99) !important; }
+.light .text-gray-400 { color: rgb(75 85 99) !important; }
+.light .text-gray-900 { color: rgb(17 24 39) !important; font-weight: 500; }
+.light .text-white { color: rgb(17 24 39) !important; font-weight: 500; }
+.light .border-slate-700 { border-color: rgb(226 232 240) !important; }
+.light .border-slate-700\/50 { border-color: rgb(226 232 240 / 0.5) !important; }
+.light .border-slate-600\/50 { border-color: rgb(209 213 219 / 0.5) !important; }
+.light .border-slate-800 { border-color: rgb(226 232 240) !important; }
+.light .border-gray-200 { border-color: rgb(229 231 235) !important; }
+.light .border-gray-300 { border-color: rgb(209 213 219) !important; }
+.light .placeholder-gray-400 { color: rgb(156 163 175) !important; }
+.light .placeholder-gray-500 { color: rgb(107 114 128) !important; }
+.light .hover\:border-blue-400:hover { border-color: rgb(96 165 250) !important; }
+.light .hover\:border-blue-500\/50:hover { border-color: rgb(59 130 246 / 0.5) !important; }
+
+/* Additional light mode overrides for all components */
+.light .bg-slate-800 { background-color: rgb(249 250 251) !important; }
+.light .bg-slate-700 { background-color: rgb(249 250 251) !important; }
+.light .bg-slate-600 { background-color: rgb(243 244 246) !important; }
+.light .text-gray-200 { color: rgb(107 114 128) !important; }
+.light .text-gray-500 { color: rgb(75 85 99) !important; }
+.light .text-gray-600 { color: rgb(75 85 99) !important; }
+.light .text-gray-700 { color: rgb(55 65 81) !important; font-weight: 500; }
+.light .border-slate-600 { border-color: rgb(209 213 219) !important; }
+.light .hover\:bg-gray-100:hover { background-color: rgb(243 244 246) !important; }
+.light .hover\:bg-slate-700:hover { background-color: rgb(229 231 235) !important; }
+.light .hover\:bg-slate-800:hover { background-color: rgb(229 231 235) !important; }
+.light .hover\:text-gray-900:hover { color: rgb(17 24 39) !important; font-weight: 500; }
+.light .hover\:text-white:hover { color: rgb(17 24 39) !important; font-weight: 500; }
+
+.dark {
+  --tw-bg-opacity: 1;
+  background-color: rgb(15 23 42 / var(--tw-bg-opacity));
+}
+
+.space {
+  --tw-bg-opacity: 1;
+  background-color: rgb(15 23 42 / var(--tw-bg-opacity));
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-specific styles */
+.light body {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.dark body,
+.space body {
+  background-color: #0f172a;
+  color: #ffffff;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Custom scrollbar for content areas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Loading Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Shine effect on hover */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.shine:hover::before {
+  left: 100%;
+}
+
+/* Ensure dropdowns are always visible above content */
+[class*="z-\[9999\]"] {
+  z-index: 9999 !important;
+  position: relative;
+}
+
+/* Fix for search suggestions and theme menu visibility */
+.absolute[style*="zIndex"] {
+  z-index: 9999 !important;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  button:not(.touch-ignore), a:not(.touch-ignore) {
+    min-height: 44px; /* iOS recommended touch target size */
+    min-width: 44px;
+  }
+  
+  /* Improve text readability on mobile */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Prevent text selection on interactive elements for better UX */
+  button, .card-hover {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+    tap-highlight-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Touch manipulation for better mobile performance */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Fluid typography for better device flexibility */
+@media (max-width: 475px) {
+  /* Extra small devices - reduce font sizes slightly */
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 475px) and (max-width: 639px) {
+  /* Small devices */
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 640px) {
+  /* Tablets and up */
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+  table {
+    font-size: 0.875rem;
+  }
+  
+  th, td {
+    padding: 0.5rem;
+  }
+}
+
+/* Smooth scrolling for mobile */
+@media (max-width: 1024px) {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Hide scrollbar for horizontal scroll on mobile */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+

@@ -1,0 +1,49 @@
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Data, Cache, and Models
+data/
+logs/
+models/
+*.pkl
+*.parquet
+*.csv
+*.json
+
+# But keep example files, Postman collection, and MCP tools
+!predictions_example.json
+!prediction_output_example.json
+!Stock_Prediction_API*.postman_collection.json
+!core/mcp_tools.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+

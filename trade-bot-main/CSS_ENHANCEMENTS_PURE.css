@@ -1,0 +1,521 @@
+/* ============================================================================
+   RESPONSIVE CSS ENHANCEMENTS - PURE CSS VERSION (No Tailwind @apply)
+   ============================================================================
+   This file provides production-ready responsive styles for the trading dashboard.
+   These styles can be imported directly into your index.css or component styles.
+   ============================================================================ */
+
+/* ============================================================================
+   CSS VARIABLES - DESIGN TOKENS
+   ============================================================================ */
+
+:root {
+  /* Colors */
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-500: #6b7280;
+  --color-neutral-700: #374151;
+  --color-neutral-900: #111827;
+  
+  /* Dark Mode */
+  --color-neutral-600: #4b5563;
+  --color-neutral-700-dark: #2d3748;
+  --color-neutral-800: #1f2937;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Typography */
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.25rem;
+  
+  /* Transitions */
+  --transition-normal: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+}
+
+/* Dark mode colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-neutral-100: #1f2937;
+    --color-neutral-200: #374151;
+    --color-neutral-300: #4b5563;
+    --color-neutral-700: #e5e7eb;
+    --color-neutral-900: #f3f4f6;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE BUTTON STYLES - TOUCH FRIENDLY
+   ============================================================================ */
+
+.btn,
+button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all var(--transition-normal);
+  outline: none;
+  border: none;
+  
+  /* Mobile-First: Larger touch targets */
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: var(--fs-sm);
+  min-height: 44px;
+  min-width: 44px;
+  
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  
+  /* Touch Device Optimization */
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button:focus,
+.btn:focus {
+  outline: none;
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Responsive Button Sizes */
+@media (max-width: 480px) {
+  .btn,
+  button {
+    padding: 0.75rem 1rem;
+    min-height: 48px; /* Extra touch-friendly on mobile */
+    font-size: var(--fs-sm);
+    border-radius: 0.375rem;
+  }
+  
+  .btn-sm {
+    padding: 0.5rem 0.75rem;
+    min-height: 40px;
+  }
+  
+  .btn-lg {
+    padding: 1rem 1.5rem;
+    min-height: 52px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .btn,
+  button {
+    padding: 0.75rem 1.25rem;
+    min-height: 44px;
+    font-size: var(--fs-sm);
+  }
+}
+
+@media (min-width: 769px) {
+  .btn,
+  button {
+    padding: 0.75rem 1.5rem;
+    min-height: 44px;
+    font-size: var(--fs-base);
+  }
+}
+
+/* Primary button */
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-600);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--color-primary-700);
+  transform: translateY(0);
+}
+
+.btn-primary:focus {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Secondary button */
+.btn-secondary {
+  background-color: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+  border: 1px solid var(--color-neutral-200);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-secondary {
+    background-color: var(--color-neutral-700-dark);
+    color: white;
+    border-color: var(--color-neutral-600);
+  }
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-neutral-200);
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-neutral-600);
+  }
+}
+
+.btn-secondary:active:not(:disabled) {
+  background-color: var(--color-neutral-300);
+}
+
+/* Danger button */
+.btn-danger {
+  background-color: var(--color-error-500);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-error-600);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: var(--color-error-700);
+}
+
+/* Success button */
+.btn-success {
+  background-color: var(--color-success-500);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--color-success-600);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success:active:not(:disabled) {
+  background-color: var(--color-success-700);
+}
+
+/* Full-width button on mobile */
+.btn-block {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .btn-block-mobile {
+    width: 100%;
+    display: block;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE FORM STYLES - FLEXIBLE INPUT WIDTHS
+   ============================================================================ */
+
+.input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: var(--fs-base);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.5rem;
+  background-color: white;
+  color: var(--color-neutral-900);
+  transition: all var(--transition-normal);
+  
+  box-shadow: var(--shadow-sm);
+  
+  /* Touch Device Optimization */
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    border-color: var(--color-neutral-600);
+    background-color: var(--color-neutral-800);
+    color: white;
+  }
+}
+
+.input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-neutral-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  .input::placeholder,
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-neutral-400, #9ca3af);
+  }
+}
+
+.input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 0 1px var(--color-primary-500);
+}
+
+.input:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: var(--color-neutral-100);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input:disabled,
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    background-color: var(--color-neutral-700-dark);
+  }
+}
+
+/* Input error state */
+.input-error,
+input.error,
+textarea.error,
+select.error {
+  border-color: var(--color-error-500);
+}
+
+.input-error:focus,
+input.error:focus,
+textarea.error:focus,
+select.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 0 0 1px var(--color-error-500);
+}
+
+/* Input success state */
+.input-success,
+input.success,
+textarea.success,
+select.success {
+  border-color: var(--color-success-500);
+}
+
+.input-success:focus,
+input.success:focus,
+textarea.success:focus,
+select.success:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 0 0 1px var(--color-success-500);
+}
+
+/* Form label */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  font-size: var(--fs-sm);
+}
+
+@media (prefers-color-scheme: dark) {
+  label {
+    color: var(--color-neutral-300, #d1d5db);
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE CARDS & CONTAINERS
+   ============================================================================ */
+
+.card {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-neutral-200);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background-color: var(--color-neutral-800);
+    border-color: var(--color-neutral-700-dark);
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+/* ============================================================================
+   RESPONSIVE GRID & LAYOUT
+   ============================================================================ */
+
+.grid-responsive {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================================================
+   TOUCH-FRIENDLY SPACING
+   ============================================================================ */
+
+/* Responsive padding */
+.p-responsive {
+  padding: 1rem;
+}
+
+@media (min-width: 481px) {
+  .p-responsive {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .p-responsive {
+    padding: 2rem;
+  }
+}
+
+/* ============================================================================
+   MOBILE & DEVICE OPTIMIZATIONS
+   ============================================================================ */
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent zoom on iOS input focus */
+@media (max-width: 480px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-neutral-900);
+    color: var(--color-neutral-100);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & FOCUS STATES
+   ============================================================================ */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: more) {
+  button,
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  input,
+  textarea,
+  select {
+    border-width: 2px;
+  }
+}

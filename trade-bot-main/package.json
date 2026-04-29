@@ -1,0 +1,18 @@
+{
+  "name": "blackhole-infeverse-trading-dashboard",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "cd trading-dashboard && npm run dev",
+    "build": "cd trading-dashboard && npm run build",
+    "preview": "cd trading-dashboard && npm run preview",
+    "start": "cd trading-dashboard && npm run dev"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/node": "^25.0.7",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
+  }
+}

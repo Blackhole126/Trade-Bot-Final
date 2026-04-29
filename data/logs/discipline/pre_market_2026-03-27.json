@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-27",
+  "capital_allocated": 100000.0,
+  "max_risk_per_trade": 0.005,
+  "max_risk_absolute": 500.0,
+  "instruments_allowed": [
+    "intraday"
+  ],
+  "max_trades": 10,
+  "min_rr_ratio": 1.5,
+  "market_regime": "NORMAL",
+  "volatility_level": "NORMAL",
+  "mental_state_ok": true,
+  "declaration_signed": true,
+  "timestamp": "2026-03-27T12:06:45.337875"
+}

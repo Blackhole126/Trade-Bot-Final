@@ -1,0 +1,118 @@
+CLI TOOL TEST RESULTS
+==================================================
+
+Option 1:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 2:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 3:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 4:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 5:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 7:
+  Success: False
+
+Option 8:
+  Success: False
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+
+Option 9:
+  Success: True
+  Output: 
+================================================================================
+               STOCK ANALYSIS & ML PREDICTION TOOL
+================================================================================
+
+ Complete Stock Analysis with 4 ML Models:
+    Random Forest, LightGBM, XGBoost (Price Prediction)
+    DQN Agent (Deep Reinforcement Learning)
+
+ Features:
+    50+ Technical Indicators (RSI, MACD, Bollinger Bands, etc.)
+    Financial Statements (Income, Balance Sheet, Cash Flow)
+    In...
+

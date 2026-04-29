@@ -1,0 +1,34 @@
+/* App-specific styles */
+
+/* Smooth transitions for responsive changes */
+* {
+  transition: padding 0.3s ease, margin 0.3s ease, font-size 0.3s ease;
+}
+
+/* Fix for mobile viewport height issues */
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Better mobile keyboard handling */
+@media (max-height: 600px) {
+  .navbar {
+    padding: 0.5rem 0;
+  }
+}
+
+/* Print styles for responsiveness */
+@media print {
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+}

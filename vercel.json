@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd trading-dashboard && npm run build",
+  "outputDirectory": "trading-dashboard/dist",
+  "installCommand": "npm install --prefix trading-dashboard"
+}

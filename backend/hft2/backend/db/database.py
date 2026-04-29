@@ -1,0 +1,318 @@
+"""
+Database configuration and initialization for LangGraph SQLite checkpoint system
+"""
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, JSON, ForeignKey, Boolean, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+from datetime import datetime
+from pathlib import Path
+import json
+import os
+import logging
+from typing import Dict, List, Optional, Any
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+Base = declarative_base()
+
+class Portfolio(Base):
+    __tablename__ = 'portfolios'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String, index=True, nullable=True)  # None = legacy/global; set = per-user
+    mode = Column(String, index=True)  # 'paper' or 'live'
+    cash = Column(Float, default=0.0)
+    starting_balance = Column(Float)
+    realized_pnl = Column(Float, default=0.0)
+    unrealized_pnl = Column(Float, default=0.0)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+    holdings = relationship("Holding", back_populates="portfolio")
+    trades = relationship("Trade", back_populates="portfolio")
+
+class Holding(Base):
+    __tablename__ = 'holdings'
+    
+    id = Column(Integer, primary_key=True)
+    portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
+    ticker = Column(String, index=True)
+    quantity = Column(Integer)
+    avg_price = Column(Float)
+    last_price = Column(Float)
+    portfolio = relationship("Portfolio", back_populates="holdings")
+
+class Trade(Base):
+    __tablename__ = 'trades'
+    
+    id = Column(Integer, primary_key=True)
+    portfolio_id = Column(Integer, ForeignKey('portfolios.id'))
+    timestamp = Column(DateTime, index=True)
+    ticker = Column(String, index=True)
+    action = Column(String)  # 'buy' or 'sell'
+    quantity = Column(Integer)
+    price = Column(Float)
+    pnl = Column(Float)
+    stop_loss = Column(Float)
+    take_profit = Column(Float)
+    trade_metadata = Column(JSON)  # For additional trade data
+    portfolio = relationship("Portfolio", back_populates="trades")
+
+class SignalPerformance(Base):
+    """
+    PRODUCTION ENHANCEMENT: Track signal performance for continuous learning
+    """
+    __tablename__ = 'signal_performance'
+    
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String, index=True)
+    signal_type = Column(String, index=True)  # e.g., 'technical', 'ml', 'sentiment'
+    signal_name = Column(String)  # e.g., 'rsi_oversold', 'ml_bullish'
+    signal_strength = Column(Float)  # 0.0 to 1.0
+    signal_confidence = Column(Float)  # 0.0 to 1.0
+    market_regime = Column(String)  # e.g., 'bull', 'bear', 'sideways'
+    actual_outcome = Column(Float)  # Actual price movement after signal
+    outcome_duration = Column(Integer)  # Days until outcome measurement
+    is_correct = Column(Boolean)  # Whether signal was correct
+    false_signal_reason = Column(String)  # Reason for false signal if applicable
+    liquidity_score = Column(Float)  # Liquidity at time of signal
+    volatility_regime = Column(String)  # e.g., 'low', 'normal', 'high'
+    additional_metrics = Column(JSON)  # Additional performance metrics
+
+def _default_db_uri() -> str:
+    # Respect DATA_DIR env var (set to /tmp/data on Render; project-root data/ locally)
+    env_data_dir = os.environ.get("DATA_DIR", "")
+    if env_data_dir:
+        data_dir = Path(env_data_dir)
+    else:
+        # Fall back to project root /data/ relative to this file
+        backend_dir = Path(__file__).resolve().parents[1]
+        project_root = backend_dir.parent
+        data_dir = project_root / 'data'
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{(data_dir / 'trading.db').as_posix()}"
+
+
+def _migrate_add_user_id_to_portfolios(engine) -> None:
+    """Add user_id column to portfolios if missing (SQLite-safe)."""
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            if engine.dialect.name == "sqlite":
+                r = conn.execute(text("PRAGMA table_info(portfolios)"))
+                rows = r.fetchall()
+                # sqlite returns (cid, name, type, notnull, dflt_value, pk)
+                has_user_id = any((row[1] == "user_id" for row in rows))
+                if not has_user_id:
+                    conn.execute(text("ALTER TABLE portfolios ADD COLUMN user_id VARCHAR(255)"))
+                    conn.commit()
+                    logger.info("Migrated portfolios: added user_id column")
+    except Exception as e:
+        logger.warning(f"Portfolio user_id migration skipped or failed: {e}")
+
+
+def init_db(db_path: str | None = None):
+    """Initialize the database and create tables"""
+    try:
+        db_uri = db_path if db_path else _default_db_uri()
+        logger.info(f"Initializing database with URI: {db_uri}")
+        # Use WAL journal mode + 30-second busy timeout so multiple processes
+        # (api_server.py + run_hft2.py) can share the same SQLite file without
+        # hitting "database is locked" errors.
+        engine = create_engine(
+            db_uri,
+            connect_args={"timeout": 30, "check_same_thread": False},
+        )
+        # Enable WAL mode for the connection pool
+        from sqlalchemy import event, text as sa_text
+        @event.listens_for(engine, "connect")
+        def _set_wal_mode(dbapi_conn, _record):
+            try:
+                dbapi_conn.execute("PRAGMA journal_mode=WAL")
+                dbapi_conn.execute("PRAGMA busy_timeout=30000")
+            except Exception:
+                pass
+        logger.info("Creating database tables")
+        Base.metadata.create_all(engine)
+        _migrate_add_user_id_to_portfolios(engine)
+        logger.info("Database tables created successfully")
+        return engine
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+        logger.error(f"Error type: {type(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        raise
+
+def create_session(engine):
+    """Create a new database session"""
+    Session = sessionmaker(bind=engine)
+    return Session()
+
+class DatabaseManager:
+    def __init__(self, db_path: str | None = None):
+        logger.info(f"Initializing DatabaseManager with db_path: {db_path}")
+        try:
+            self.engine = init_db(db_path)
+            self.Session = sessionmaker(bind=self.engine)
+            logger.info("DatabaseManager initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing DatabaseManager: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise
+    
+    def migrate_json_to_sqlite(self, data_dir: str):
+        """Migrate existing JSON data to SQLite.
+        Only runs once per JSON file: after migration the source JSON is renamed
+        to .migrated so subsequent WebTradingBot inits skip this entirely.
+        """
+        try:
+            session = self.Session()
+
+            # Load JSON files
+            paper_portfolio = self._load_json(os.path.join(data_dir, 'portfolio_india_paper.json'))
+            live_portfolio = self._load_json(os.path.join(data_dir, 'portfolio_india_live.json'))
+            paper_trades = self._load_json(os.path.join(data_dir, 'trade_log_india_paper.json'))
+            live_trades = self._load_json(os.path.join(data_dir, 'trade_log_india_live.json'))
+
+            # Debug logging
+            logger.info(f"Paper portfolio type: {type(paper_portfolio)}")
+            logger.info(f"Live portfolio type: {type(live_portfolio)}")
+            logger.info(f"Paper trades type: {type(paper_trades)}")
+            logger.info(f"Live trades type: {type(live_trades)}")
+
+            # Migrate paper portfolio (scoped delete — only removes this portfolio's rows)
+            if paper_portfolio:
+                logger.info("Migrating paper portfolio")
+                self._migrate_portfolio(session, paper_portfolio, 'paper', paper_trades)
+
+            # Migrate live portfolio (scoped delete — only removes this portfolio's rows)
+            if live_portfolio:
+                logger.info("Migrating live portfolio")
+                self._migrate_portfolio(session, live_portfolio, 'live', live_trades)
+
+            session.commit()
+            logger.info("Successfully migrated JSON data to SQLite")
+
+            # Create backup of JSON files
+            self._backup_json_files(data_dir)
+
+            # CRITICAL: Rename source JSON files so migration is never triggered again.
+            # Without this the migration fires on every bot init, causing repeated
+            # DELETE FROM trades and SQLite lock errors when api_server.py is running.
+            for fname in ['portfolio_india_paper.json', 'portfolio_india_live.json',
+                          'trade_log_india_paper.json', 'trade_log_india_live.json']:
+                src = os.path.join(data_dir, fname)
+                if os.path.exists(src):
+                    os.rename(src, src + '.migrated')
+                    logger.info(f"Renamed {fname} -> {fname}.migrated (migration complete)")
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error during migration: {e}")
+            logger.error(f"Error type: {type(e)}")
+            raise
+        finally:
+            session.close()
+    
+    def _load_json(self, filepath: str) -> Optional[Dict]:
+        """Load JSON file with error handling"""
+        try:
+            if os.path.exists(filepath):
+                with open(filepath, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading {filepath}: {e}")
+        return None
+    
+    def _backup_json_files(self, data_dir: str):
+        """Create backup of original JSON files"""
+        backup_dir = os.path.join(data_dir, 'json_backup', datetime.now().strftime('%Y%m%d_%H%M%S'))
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        for filename in ['portfolio_india_paper.json', 'portfolio_india_live.json',
+                        'trade_log_india_paper.json', 'trade_log_india_live.json']:
+            src = os.path.join(data_dir, filename)
+            if os.path.exists(src):
+                dst = os.path.join(backup_dir, filename)
+                with open(src, 'r') as f_src, open(dst, 'w') as f_dst:
+                    f_dst.write(f_src.read())
+        
+        logger.info(f"Created JSON backups in {backup_dir}")
+    
+    def _migrate_portfolio(self, session, portfolio_data: Dict, mode: str, trades_data: Optional[List] = None):
+        """Migrate a portfolio and its trades to SQLite"""
+        logger.info(f"Migrating portfolio for mode {mode}")
+        logger.info(f"Portfolio data type: {type(portfolio_data)}")
+        logger.info(f"Trades data type: {type(trades_data)}")
+        logger.info(f"Trades data value: {trades_data}")
+        
+        # Clean up any existing data for this mode
+        portfolio = session.query(Portfolio).filter_by(mode=mode).first()
+        if portfolio:
+            session.query(Holding).filter_by(portfolio_id=portfolio.id).delete()
+            session.query(Trade).filter_by(portfolio_id=portfolio.id).delete()
+            session.delete(portfolio)
+            session.commit()
+        
+        # Create new portfolio
+        portfolio = Portfolio(mode=mode)
+        portfolio.cash = portfolio_data.get('cash', 0.0)
+        portfolio.starting_balance = portfolio_data.get('starting_balance', 0.0)
+        portfolio.realized_pnl = portfolio_data.get('realized_pnl', 0.0)
+        portfolio.unrealized_pnl = portfolio_data.get('unrealized_pnl', 0.0)
+        portfolio.last_updated = datetime.now()
+        session.add(portfolio)
+        session.flush()  # Get portfolio ID
+        
+        # Create holdings
+        holdings = portfolio_data.get('holdings', {})
+        logger.info(f"Holdings type: {type(holdings)}")
+        logger.info(f"Holdings value: {holdings}")
+        for ticker, data in holdings.items():
+            holding = Holding(
+                portfolio_id=portfolio.id,
+                ticker=ticker,
+                quantity=data.get('qty', 0),
+                avg_price=data.get('avg_price', 0.0),
+                last_price=data.get('last_price', data.get('avg_price', 0.0))
+            )
+            session.add(holding)
+            
+        # Create trades
+        logger.info(f"Processing trades for {mode} mode")
+        if trades_data and isinstance(trades_data, list):
+            logger.info(f"Found {len(trades_data)} trades to migrate")
+            for i, trade_data in enumerate(trades_data):
+                logger.info(f"Processing trade {i}: {type(trade_data)}")
+                # Handle null values in trade data
+                pnl = trade_data.get('pnl')
+                if pnl is None:
+                    pnl = 0.0
+                    
+                stop_loss = trade_data.get('stop_loss')
+                if stop_loss is None:
+                    stop_loss = 0.0
+                    
+                take_profit = trade_data.get('take_profit')
+                if take_profit is None:
+                    take_profit = 0.0
+                
+                trade = Trade(
+                    portfolio_id=portfolio.id,
+                    timestamp=datetime.strptime(trade_data['timestamp'], '%Y-%m-%d %H:%M:%S.%f'),
+                    ticker=trade_data['asset'],
+                    action=trade_data['action'],
+                    quantity=trade_data['qty'],
+                    price=trade_data['price'],
+                    pnl=pnl,
+                    stop_loss=stop_loss,
+                    take_profit=take_profit,
+                    trade_metadata=trade_data.get('metadata', {})
+                )
+                session.add(trade)
+        else:
+            logger.info(f"No trades to migrate for {mode} mode")
+                
+        session.flush()  # Ensure IDs are generated

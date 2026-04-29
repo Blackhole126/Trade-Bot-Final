@@ -1,0 +1,73 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data & Models
+backend/data/cache/
+backend/data/logs/
+backend/models/*.pkl
+backend/models/*.joblib
+*.h5
+*.pth
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+trading-dashboard/dist/
+trading-dashboard/build/
+
+# Git
+.git-rewrite/
+
+# HFT2 code is in backend/hft2/ and is tracked. Only ignore the secrets file:
+backend/hft2/env
+backend/hft2/backend/env
+
+# Large ML artifacts and logs (don't push to GitHub)
+catboost_info/
+*.log
+*.log.*
+backend/hft2/backend/security_id_list.csv
+backend/hft2/backend/stock_analysis/

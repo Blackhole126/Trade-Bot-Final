@@ -1,0 +1,44 @@
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+python-dotenv>=1.0.0
+
+# Auth & DB — required for login/signup/MongoDB
+pymongo>=4.6.0
+motor>=3.3.0
+dnspython>=2.4.0
+PyJWT>=2.8.0
+bcrypt>=4.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# Data & APIs
+requests>=2.31.0
+dhanhq>=1.3.0
+pandas>=2.1.0
+numpy>=1.26.4
+ta>=0.10.2
+
+# Utilities
+gnews>=0.3.6
+praw>=7.7.0
+vaderSentiment>=3.3.2
+aiohttp>=3.8.3,<4.0.0
+tenacity>=8.2.0
+pytz>=2023.3
+psutil>=5.9.0
+websockets>=12.0
+
+redis
+feedparser
+beautifulsoup4
+yfinance
+pandas-market-calendars
+scipy
+scikit-learn
+xgboost
+torch
+gymnasium
+sqlalchemy
+alembic

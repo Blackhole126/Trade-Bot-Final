@@ -1,0 +1,73 @@
+services:
+  # ============================================================
+  # Single Backend Service — runs BOTH backends
+  # rootDir: backend/
+  #   - web_backend.py  (HFT: auth, bot, broker)  → $PORT
+  #   - api_server.py   (ML predictions, internal) → $PORT+1
+  #
+  # Set these env vars in Render Dashboard (NOT in this file):
+  #   MONGODB_URI        — your Atlas connection string
+  #   JWT_SECRET         — long random hex string
+  # Dhan credentials are entered by each user in the Settings UI and stored in MongoDB.
+  # ============================================================
+  - type: web
+    name: trade-bot-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: bash render_start.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false          # Set in Render Dashboard
+      - key: JWT_SECRET
+        sync: false          # Set in Render Dashboard
+      - key: GROQ_API_KEY
+        sync: false          # Optional — AI market commentary
+      - key: GROQ_MODEL
+        value: "llama-3.1-8b-instant"
+      - key: CORS_ALLOW_ALL
+        value: "true"
+      - key: MODE
+        value: "live"
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: JWT_EXPIRE_MINUTES
+        value: "1440"        # 24 hours
+      - key: DATA_DIR
+        value: "/tmp/data"   # Writable dir on Render ephemeral FS
+      - key: LOGS_DIR
+        value: "/tmp/logs"
+      - key: FYERS_ALLOW_MOCK
+        value: "true"        # Fall back to yfinance instead of Fyers on cloud
+      - key: RENDER
+        value: "true"        # Lets backend know it's running on Render
+
+  # ============================================================
+  # Frontend — React/Vite static site
+  # ============================================================
+  - type: static
+    name: trade-bot-dashboard
+    buildCommand: cd trading-dashboard && npm install && npm run build
+    staticPublishPath: trading-dashboard/dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_BACKEND_URL
+        fromService:
+          type: web
+          name: trade-bot-backend
+          property: url          # Full https://... URL (not just hostname)
+      - key: VITE_PREDICTION_API_URL
+        fromService:
+          type: web
+          name: trade-bot-backend
+          property: url          # /tools/* proxy lives on the same backend
+      - key: VITE_ENABLE_AUTH
+        value: "true"

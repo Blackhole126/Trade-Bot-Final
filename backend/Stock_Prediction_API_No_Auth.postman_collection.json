@@ -1,0 +1,405 @@
+{
+	"info": {
+		"_postman_id": "stock-prediction-api-no-auth",
+		"name": "Stock Prediction API (No Authentication)",
+		"description": "Complete REST API for stock price prediction using ML models.\nAll endpoints are open access - no JWT token required.\n\nFeatures:\n- Price prediction with ensemble ML models\n- DQN trading agent recommendations\n- Multi-symbol scanning and ranking\n- Risk parameter customization\n- RL agent training\n- User feedback collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "stock-api-v4"
+	},
+	"item": [
+		{
+			"name": "0. API Information",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": [""]
+				},
+				"description": "Get API information, available endpoints, version, and configuration"
+			},
+			"response": []
+		},
+		{
+			"name": "1. Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/tools/health",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "health"]
+				},
+				"description": "Check system health, CPU usage, memory, disk space, and model availability"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Rate Limit Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/auth/status",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["auth", "status"]
+				},
+				"description": "Check your current rate limit status (requests remaining per minute/hour)"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Predict - Single Symbol",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\"],\n  \"horizon\": \"intraday\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/predict",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "predict"]
+				},
+				"description": "Get prediction for a single stock symbol.\n\nHorizons:\n- intraday: 1 day ahead\n- short: 3-5 days ahead\n- long: 10-15 days ahead"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Predict - Multiple Symbols",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\", \"TCS.NS\", \"INFY.NS\"],\n  \"horizon\": \"short\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/predict",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "predict"]
+				},
+				"description": "Get predictions for multiple stock symbols at once (up to 50 symbols)"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Predict - With Risk Parameters",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\"],\n  \"horizon\": \"intraday\",\n  \"risk_profile\": \"moderate\",\n  \"stop_loss_pct\": 2.0,\n  \"capital_risk_pct\": 1.5,\n  \"drawdown_limit_pct\": 5.0\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/predict",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "predict"]
+				},
+				"description": "Get prediction with custom risk parameters.\n\nRisk Profiles:\n- low: Conservative (smaller position sizes)\n- moderate: Balanced approach\n- high: Aggressive (larger positions)\n\nRisk Parameters:\n- stop_loss_pct: Stop loss percentage (0.1-50.0)\n- capital_risk_pct: Capital to risk per trade (0.1-100.0)\n- drawdown_limit_pct: Maximum drawdown limit (0.1-100.0)"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Scan All Symbols",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\", \"TCS.NS\", \"INFY.NS\", \"HDFCBANK.NS\", \"ICICIBANK.NS\"],\n  \"horizon\": \"intraday\",\n  \"min_confidence\": 0.4,\n  \"stop_loss_pct\": 2.0,\n  \"capital_risk_pct\": 1.0\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/scan_all",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "scan_all"]
+				},
+				"description": "Scan multiple symbols and get them ranked by confidence.\n\nFilters results by minimum confidence level.\nReturns top opportunities sorted by confidence.\n\nParameters:\n- symbols: List of stock symbols (up to 100)\n- horizon: Time horizon for prediction\n- min_confidence: Minimum confidence threshold (0.0-1.0)\n- stop_loss_pct: Optional stop loss percentage\n- capital_risk_pct: Optional capital risk percentage"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Analyze - Multi-Horizon",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbol\": \"RELIANCE.NS\",\n  \"horizons\": [\"intraday\", \"short\", \"long\"],\n  \"stop_loss_pct\": 2.0,\n  \"capital_risk_pct\": 1.0,\n  \"drawdown_limit_pct\": 5.0\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/analyze",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "analyze"]
+				},
+				"description": "Analyze a single symbol across multiple time horizons.\n\nProvides comprehensive analysis with:\n- Predictions for each horizon\n- Risk metrics\n- Trend analysis\n- Actionable recommendations\n\nParameters:\n- symbol: Stock symbol to analyze\n- horizons: List of time horizons (1-3 horizons)\n- stop_loss_pct: Stop loss percentage\n- capital_risk_pct: Capital risk per trade\n- drawdown_limit_pct: Maximum drawdown limit"
+			},
+			"response": []
+		},
+		{
+			"name": "8. Provide Feedback - Correct",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbol\": \"RELIANCE.NS\",\n  \"predicted_action\": \"LONG\",\n  \"user_feedback\": \"correct\",\n  \"actual_return\": 2.5\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/feedback",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "feedback"]
+				},
+				"description": "Submit feedback when prediction was correct.\n\nHelps improve the RL agent through reinforcement learning.\n\nParameters:\n- symbol: Stock symbol\n- predicted_action: Original prediction (LONG/SHORT/HOLD)\n- user_feedback: 'correct' or 'incorrect'\n- actual_return: Actual return percentage (optional but recommended)"
+			},
+			"response": []
+		},
+		{
+			"name": "9. Provide Feedback - Incorrect",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbol\": \"TCS.NS\",\n  \"predicted_action\": \"LONG\",\n  \"user_feedback\": \"incorrect\",\n  \"actual_return\": -1.8\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/feedback",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "feedback"]
+				},
+				"description": "Submit feedback when prediction was incorrect.\n\nSystem includes logical validation:\n- Checks if feedback matches actual return\n- Provides suggestions if inconsistency detected\n- Helps maintain high-quality training data"
+			},
+			"response": []
+		},
+		{
+			"name": "10. Train RL Agent",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbol\": \"RELIANCE.NS\",\n  \"horizon\": \"intraday\",\n  \"n_episodes\": 20,\n  \"force_retrain\": false\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/train_rl",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "train_rl"]
+				},
+				"description": "Train the DQN (Deep Q-Network) reinforcement learning agent.\n\nParameters:\n- symbol: Stock symbol to train on\n- horizon: Time horizon for training\n- n_episodes: Number of training episodes (10-100)\n- force_retrain: Force retraining even if model exists\n\nReturns:\n- Training statistics\n- Reward metrics\n- Model performance indicators"
+			},
+			"response": []
+		},
+		{
+			"name": "11. Fetch Data - Basic",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\", \"TCS.NS\"],\n  \"period\": \"2y\",\n  \"include_features\": false,\n  \"refresh\": false\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/fetch_data",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "fetch_data"]
+				},
+				"description": "Fetch historical data for symbols.\n\nParameters:\n- symbols: List of stock symbols (up to 100)\n- period: Time period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max)\n- include_features: Include calculated features\n- refresh: Force refresh from data source\n\nUses intelligent caching for performance."
+			},
+			"response": []
+		},
+		{
+			"name": "12. Fetch Data - With Features",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\"RELIANCE.NS\"],\n  \"period\": \"1y\",\n  \"include_features\": true,\n  \"refresh\": false\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/fetch_data",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "fetch_data"]
+				},
+				"description": "Fetch data with full feature engineering.\n\nIncludes:\n- OHLCV data\n- Technical indicators (RSI, MACD, Bollinger Bands, etc.)\n- Volume indicators\n- Price patterns\n- Momentum indicators\n- 84+ calculated features total"
+			},
+			"response": []
+		},
+		{
+			"name": "13. Predict - Indian Stocks Portfolio",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\n    \"RELIANCE.NS\",\n    \"TCS.NS\",\n    \"HDFCBANK.NS\",\n    \"INFY.NS\",\n    \"ICICIBANK.NS\",\n    \"HINDUNILVR.NS\",\n    \"ITC.NS\",\n    \"SBIN.NS\",\n    \"BHARTIARTL.NS\",\n    \"KOTAKBANK.NS\"\n  ],\n  \"horizon\": \"short\",\n  \"risk_profile\": \"moderate\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/predict",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "predict"]
+				},
+				"description": "Example: Predict for a portfolio of top Indian stocks (Nifty 50)"
+			},
+			"response": []
+		},
+		{
+			"name": "14. Scan - Nifty Bank Stocks",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\n    \"HDFCBANK.NS\",\n    \"ICICIBANK.NS\",\n    \"SBIN.NS\",\n    \"KOTAKBANK.NS\",\n    \"AXISBANK.NS\",\n    \"INDUSINDBK.NS\",\n    \"BANKBARODA.NS\",\n    \"PNB.NS\",\n    \"FEDERALBNK.NS\",\n    \"IDFCFIRSTB.NS\"\n  ],\n  \"horizon\": \"intraday\",\n  \"min_confidence\": 0.5\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/scan_all",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "scan_all"]
+				},
+				"description": "Example: Scan banking sector stocks for best opportunities"
+			},
+			"response": []
+		},
+		{
+			"name": "15. Scan - IT Sector Stocks",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"symbols\": [\n    \"TCS.NS\",\n    \"INFY.NS\",\n    \"WIPRO.NS\",\n    \"HCLTECH.NS\",\n    \"TECHM.NS\",\n    \"LTI.NS\",\n    \"MPHASIS.NS\",\n    \"COFORGE.NS\"\n  ],\n  \"horizon\": \"short\",\n  \"min_confidence\": 0.4\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/tools/scan_all",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["tools", "scan_all"]
+				},
+				"description": "Example: Scan IT sector for trading opportunities"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}
+

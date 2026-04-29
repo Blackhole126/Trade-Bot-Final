@@ -1,0 +1,222 @@
+/* Additional light theme overrides for specific elements mentioned in DOM */
+
+/* Override for bg-slate-800 elements */
+.light .bg-slate-800 { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+.light .bg-slate-800.rounded-lg.p-3 { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+.light .bg-slate-800.rounded-lg.p-3.sm\:p-4 { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+.light .bg-slate-800.rounded-lg.border.border-slate-700 { 
+  background-color: rgb(241 245 249) !important; 
+  border-color: rgb(226 232 240) !important; 
+}
+
+/* Override for gradient backgrounds */
+.light .bg-gradient-to-br.from-slate-800\/80.to-slate-900\/80 {
+  background: linear-gradient(to bottom right, rgb(243 244 246 / 0.8) 0%, rgb(255 255 255 / 0.8) 100%) !important;
+}
+
+.light .bg-gradient-to-br.from-slate-800\/80.to-slate-900\/80.backdrop-blur-sm {
+  background: linear-gradient(to bottom right, rgb(243 244 246 / 0.8) 0%, rgb(255 255 255 / 0.8) 100%) !important;
+}
+
+.light .bg-gradient-to-br.from-slate-800\/80.to-slate-900\/80.backdrop-blur-sm.rounded-lg.p-3 {
+  background: linear-gradient(to bottom right, rgb(243 244 246 / 0.8) 0%, rgb(255 255 255 / 0.8) 100%) !important;
+}
+
+.light .bg-gradient-to-br.from-slate-800\/80.to-slate-900\/80.backdrop-blur-sm.rounded-lg.p-3.border.border-slate-700\/50 {
+  background: linear-gradient(to bottom right, rgb(243 244 246 / 0.8) 0%, rgb(255 255 255 / 0.8) 100%) !important;
+  border-color: rgb(226 232 240 / 0.5) !important;
+}
+
+/* Override for border-slate-700 elements */
+.light .border-slate-700 { 
+  border-color: rgb(226 232 240) !important; 
+}
+
+.light .border-slate-700\/50 { 
+  border-color: rgb(226 232 240 / 0.5) !important; 
+}
+
+/* Override for p-3.sm:p-4.border-b.border-slate-700.flex.items-center.justify-between.flex-wrap.gap-2 */
+.light .p-3.sm\:p-4.border-b.border-slate-700.flex.items-center.justify-between.flex-wrap.gap-2 {
+  border-bottom-color: rgb(226 232 240) !important;
+}
+
+.light .p-3.sm\:p-4.border-b.border-slate-700 {
+  border-bottom-color: rgb(226 232 240) !important;
+}
+
+/* Override for text-gray-400 elements */
+.light .text-gray-400 { 
+  color: rgb(156 163 175) !important; 
+}
+
+.light .p-6.sm\:p-8.text-center.text-gray-400 { 
+  color: rgb(156 163 175) !important; 
+}
+
+/* Override for rounded-lg.border.border-slate-700 elements */
+.light .rounded-lg.border.border-slate-700 { 
+  border-color: rgb(226 232 240) !important; 
+}
+
+.light .bg-slate-800.rounded-lg.border.border-slate-700.p-4 { 
+  background-color: rgb(241 245 249) !important;
+  border-color: rgb(226 232 240) !important;
+}
+
+.light .bg-slate-800.rounded-lg.p-12.border.border-slate-700.text-center { 
+  background-color: rgb(241 245 249) !important;
+  border-color: rgb(226 232 240) !important;
+}
+
+.light .bg-slate-800.rounded-lg.p-3.border.border-slate-700 { 
+  background-color: rgb(241 245 249) !important;
+  border-color: rgb(226 232 240) !important;
+}
+
+/* Override for p-4.border-b.border-slate-700 */
+.light .p-4.border-b.border-slate-700 { 
+  border-bottom-color: rgb(226 232 240) !important;
+}
+
+/* Override for bg-slate-800.rounded-lg.border.border-slate-700.p-6 */
+.light .bg-slate-800.rounded-lg.border.border-slate-700.p-6 { 
+  background-color: rgb(241 245 249) !important;
+  border-color: rgb(226 232 240) !important;
+}
+
+/* Additional overrides for various slate backgrounds */
+.light .bg-slate-900 { 
+  background-color: rgb(255 255 255) !important; 
+}
+
+.light .bg-slate-700 { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+.light .bg-slate-600 { 
+  background-color: rgb(243 245 249) !important; 
+}
+
+/* Additional border overrides */
+.light .border-slate-800 { 
+  border-color: rgb(226 232 240) !important; 
+}
+
+.light .border-slate-600 { 
+  border-color: rgb(226 232 240) !important; 
+}
+
+/* Additional text color overrides */
+.light .text-gray-300 { 
+  color: rgb(209 213 219) !important; 
+}
+
+.light .text-gray-500 { 
+  color: rgb(107 114 128) !important; 
+}
+
+/* Gradient background overrides */
+.light .from-slate-800\/80 { 
+  --tw-gradient-from: rgb(243 244 246 / 0.8) var(--tw-gradient-from-position) !important;
+}
+
+.light .to-slate-900\/80 { 
+  --tw-gradient-to: rgb(255 255 255 / 0.8) var(--tw-gradient-to-position) !important;
+}
+
+/* Backdrop blur in light mode */
+.light .backdrop-blur-sm { 
+  backdrop-filter: blur(4px) !important; 
+}
+
+/* Focus and hover states */
+.light .focus\:border-blue-500:focus { 
+  border-color: rgb(59 130 246) !important; 
+}
+
+.light .hover\:bg-slate-700:hover { 
+  background-color: rgb(226 232 240) !important; 
+}
+
+.light .hover\:bg-slate-800:hover { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+/* More comprehensive overrides for common dark-themed patterns */
+.light .bg-slate-800\/80 { 
+  background-color: rgb(243 244 246 / 0.8) !important; 
+}
+
+.light .bg-slate-800\/50 { 
+  background-color: rgb(243 244 246 / 0.5) !important; 
+}
+
+.light .bg-slate-900\/80 { 
+  background-color: rgb(255 255 255 / 0.8) !important; 
+}
+
+.light .bg-slate-900\/50 { 
+  background-color: rgb(255 255 255 / 0.5) !important; 
+}
+
+.light .bg-slate-700\/50 { 
+  background-color: rgb(241 245 249 / 0.5) !important; 
+}
+
+.light .bg-slate-600\/50 { 
+  background-color: rgb(241 245 249 / 0.5) !important; 
+}
+
+.light .bg-gray-700\/50 { 
+  background-color: rgb(241 245 249 / 0.5) !important; 
+}
+
+/* Additional overrides for common dark mode patterns */
+.light .dark\:bg-slate-800 { 
+  background-color: rgb(241 245 249) !important; 
+}
+
+.light .dark\:border-slate-700 { 
+  border-color: rgb(226 232 240) !important; 
+}
+
+.light .dark\:text-white { 
+  color: rgb(17 24 39) !important; 
+}
+
+/* More specific overrides for complex class combinations */
+.light .p-3.sm\:p-4.border-b.border-slate-700 { 
+  border-bottom-color: rgb(226 232 240) !important; 
+}
+
+.light .p-6.sm\:p-8.text-center.text-gray-400 { 
+  color: rgb(156 163 175) !important; 
+}
+
+.light .w-full.h-full.min-h-0 { 
+  /* No specific override needed, just ensuring no conflicts */
+}
+
+/* Additional overrides for flex and layout classes */
+.light .flex.items-center.justify-between.flex-wrap.gap-2 { 
+  /* Layout classes typically don't need theme-specific overrides */
+}
+
+/* Ensure text contrast in light mode */
+.light .text-white { 
+  color: rgb(17 24 39) !important; 
+}
+
+.light .text-black { 
+  color: rgb(0 0 0) !important; 
+}

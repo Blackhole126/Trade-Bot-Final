@@ -1,0 +1,397 @@
+import { stockAPI } from './api';
+import { config } from '../config';
+
+// Types
+interface PredictionCacheStatus {
+  dataExists: boolean;
+  featuresExist: boolean;
+  modelsExist: boolean;
+  dataAge?: number; // in days
+  featuresAge?: number; // in days
+}
+
+interface PredictionResult {
+  symbol: string;
+  current_price: number;
+  predicted_price: number;
+  predicted_return: number;
+  action: 'LONG' | 'SHORT' | 'HOLD';
+  confidence: number;
+  reason: string;
+  timestamp: string;
+  individual_predictions: Record<string, any>;
+  metadata?: {
+    data_freshness_days?: number;
+    cache_status?: PredictionCacheStatus;
+    execution_steps?: string[];
+  };
+}
+
+interface ProgressUpdate {
+  step: 'checking_cache' | 'fetching_data' | 'calculating_features' | 'training_models' | 'predicting' | 'complete' | 'error';
+  description: string;
+  progress: number; // 0-100
+  symbol: string;
+  error?: string;
+}
+
+// Error classes
+class PredictionError extends Error {
+  constructor(message: string, public code: string, public details?: any) {
+    super(message);
+    this.name = 'PredictionError';
+  }
+}
+
+class DataDependencyError extends PredictionError {
+  constructor(message: string, public missingDependencies: string[]) {
+    super(message, 'DATA_DEPENDENCY_ERROR', { missingDependencies });
+    this.name = 'DataDependencyError';
+  }
+}
+
+export class PredictionService {
+  private static instance: PredictionService;
+  private listeners: Set<(update: ProgressUpdate) => void> = new Set();
+
+  private constructor() {}
+
+  static getInstance(): PredictionService {
+    if (!PredictionService.instance) {
+      PredictionService.instance = new PredictionService();
+    }
+    return PredictionService.instance;
+  }
+
+  // Add progress listener
+  addProgressListener(listener: (update: ProgressUpdate) => void): void {
+    this.listeners.add(listener);
+  }
+
+  // Remove progress listener
+  removeProgressListener(listener: (update: ProgressUpdate) => void): void {
+    this.listeners.delete(listener);
+  }
+
+  // Notify all listeners
+  private notifyProgress(update: ProgressUpdate): void {
+    this.listeners.forEach(listener => listener(update));
+  }
+
+  /**
+   * Check backend cache status for a symbol
+   */
+  async checkCacheStatus(symbol: string): Promise<PredictionCacheStatus> {
+    try {
+      // First check if backend is reachable with retry logic
+      let health;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          health = await stockAPI.health();
+          break;
+        } catch (error) {
+          retryCount++;
+          if (retryCount > maxRetries) {
+            throw error;
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+      
+      // Check if data exists by attempting to fetch it with retry logic
+      let dataCheck;
+      retryCount = 0;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          dataCheck = await stockAPI.fetchData([symbol], '2y', false, false);
+          break;
+        } catch (error) {
+          retryCount++;
+          if (retryCount > maxRetries) {
+            throw error;
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+      
+      const dataExists = dataCheck.results?.[0]?.status === 'cached' || dataCheck.results?.[0]?.status === 'success';
+        
+        // Check if features exist by trying to calculate them
+        let featuresExist = false;
+        if (dataExists) {
+          try {
+            const featuresCheck = await stockAPI.fetchData([symbol], '2y', true, false);
+            featuresExist = featuresCheck.results?.[0]?.features?.status === 'loaded' || 
+                          featuresCheck.results?.[0]?.features?.status === 'calculated';
+          } catch {
+            featuresExist = false;
+          }
+        }
+        
+        return {
+          dataExists: !!dataExists,
+          featuresExist: !!featuresExist,
+          modelsExist: false, // Models are checked during prediction
+          dataAge: dataExists ? 0 : undefined,
+          featuresAge: featuresExist ? 0 : undefined
+        };
+      } catch (error) {
+        console.warn(`[PredictionService] Cache check failed for ${symbol}:`, error);
+        return {
+          dataExists: false,
+          featuresExist: false,
+          modelsExist: false
+        };
+      }
+    } catch (error) {
+      console.error(`[PredictionService] Backend health check failed:`, error);
+      throw new PredictionError('Cannot connect to backend server', 'CONNECTION_ERROR');
+    }
+  }
+
+  /**
+   * Ensure all data dependencies are met before prediction
+   */
+  async ensureDataDependencies(
+    symbol: string, 
+    cacheStatus?: PredictionCacheStatus
+  ): Promise<PredictionCacheStatus> {
+    const status = cacheStatus || await this.checkCacheStatus(symbol);
+    const missingSteps: string[] = [];
+
+    this.notifyProgress({
+      step: 'checking_cache',
+      description: `Checking data dependencies for ${symbol}`,
+      progress: 10,
+      symbol
+    });
+
+    // Step 1: Ensure data exists
+    if (!status.dataExists) {
+      missingSteps.push('fetch_data');
+      this.notifyProgress({
+        step: 'fetching_data',
+        description: `Fetching stock data for ${symbol} (this may take 10-30 seconds)`,
+        progress: 20,
+        symbol
+      });
+
+      try {
+        await stockAPI.fetchData([symbol], '2y', false, true);
+        status.dataExists = true;
+        this.notifyProgress({
+          step: 'fetching_data',
+          description: `Data fetched successfully for ${symbol}`,
+          progress: 40,
+          symbol
+        });
+      } catch (error: any) {
+        throw new DataDependencyError(
+          `Failed to fetch data for ${symbol}: ${error.message}`,
+          ['fetch_data']
+        );
+      }
+    }
+
+    // Step 2: Ensure features exist
+    if (!status.featuresExist) {
+      missingSteps.push('calculate_features');
+      this.notifyProgress({
+        step: 'calculating_features',
+        description: `Calculating technical indicators for ${symbol} (this may take 15-30 seconds)`,
+        progress: 50,
+        symbol
+      });
+
+      try {
+        await stockAPI.fetchData([symbol], '2y', true, false);
+        status.featuresExist = true;
+        this.notifyProgress({
+          step: 'calculating_features',
+          description: `Technical indicators calculated for ${symbol}`,
+          progress: 70,
+          symbol
+        });
+      } catch (error: any) {
+        throw new DataDependencyError(
+          `Failed to calculate technical indicators for ${symbol}: ${error.message}`,
+          ['calculate_features']
+        );
+      }
+    }
+
+    // Step 3: Models will be handled by the backend during prediction
+    // The backend's MCP adapter automatically handles model training when needed
+
+    return status;
+  }
+
+  /**
+   * Execute prediction with proper dependency management
+   */
+  async predict(
+    symbol: string,
+    horizon: 'intraday' | 'short' | 'long' = 'intraday',
+    options: {
+      riskProfile?: string;
+      stopLossPct?: number;
+      capitalRiskPct?: number;
+      drawdownLimitPct?: number;
+      forceRefresh?: boolean;
+    } = {}
+  ): Promise<PredictionResult> {
+    try {
+      this.notifyProgress({
+        step: 'checking_cache',
+        description: `Starting prediction workflow for ${symbol}`,
+        progress: 0,
+        symbol
+      });
+
+      // Check cache status
+      let cacheStatus = await this.checkCacheStatus(symbol);
+      
+      // If force refresh is requested, clear existing data
+      if (options.forceRefresh) {
+        cacheStatus = {
+          dataExists: false,
+          featuresExist: false,
+          modelsExist: false
+        };
+      }
+
+      // Ensure all dependencies are met
+      const finalCacheStatus = await this.ensureDataDependencies(symbol, cacheStatus);
+
+      // Execute prediction
+      this.notifyProgress({
+        step: 'predicting',
+        description: `Generating prediction for ${symbol} (this may take 30-60 seconds on first run)`,
+        progress: 80,
+        symbol
+      });
+
+      const result = await stockAPI.predict(
+        [symbol],
+        horizon,
+        options.riskProfile,
+        options.stopLossPct,
+        options.capitalRiskPct,
+        options.drawdownLimitPct
+      );
+
+      // Parse the result
+      const prediction = result.predictions?.[0];
+      if (!prediction) {
+        throw new PredictionError('No prediction returned from backend', 'NO_PREDICTION');
+      }
+
+      if (prediction.error) {
+        throw new PredictionError(prediction.error, 'PREDICTION_FAILED');
+      }
+
+      const predictionResult: PredictionResult = {
+        symbol: prediction.symbol,
+        current_price: prediction.current_price,
+        predicted_price: prediction.predicted_price,
+        predicted_return: prediction.predicted_return,
+        action: prediction.action,
+        confidence: prediction.confidence,
+        reason: prediction.reason,
+        timestamp: prediction.timestamp,
+        individual_predictions: prediction.individual_predictions || {},
+        metadata: {
+          cache_status: finalCacheStatus,
+          execution_steps: [
+            ...(finalCacheStatus.dataExists ? [] : ['fetch_data']),
+            ...(finalCacheStatus.featuresExist ? [] : ['calculate_features']),
+            'predict'
+          ]
+        }
+      };
+
+      this.notifyProgress({
+        step: 'complete',
+        description: `Prediction complete for ${symbol}`,
+        progress: 100,
+        symbol
+      });
+
+      return predictionResult;
+
+    } catch (error: any) {
+      console.error(`[PredictionService] Prediction failed for ${symbol}:`, error);
+      
+      this.notifyProgress({
+        step: 'error',
+        description: `Prediction failed: ${error.message}`,
+        progress: 0,
+        symbol,
+        error: error.message
+      });
+
+      if (error instanceof PredictionError) {
+        throw error;
+      }
+      
+      throw new PredictionError(
+        error.message || 'Unknown prediction error occurred',
+        'UNKNOWN_ERROR'
+      );
+    }
+  }
+
+  /**
+   * Batch predict multiple symbols
+   */
+  async batchPredict(
+    symbols: string[],
+    horizon: 'intraday' | 'short' | 'long' = 'intraday',
+    options: {
+      riskProfile?: string;
+      stopLossPct?: number;
+      capitalRiskPct?: number;
+      drawdownLimitPct?: number;
+    } = {}
+  ): Promise<Record<string, PredictionResult | PredictionError>> {
+    const results: Record<string, PredictionResult | PredictionError> = {};
+    
+    // Process symbols sequentially to avoid overwhelming the backend
+    for (const symbol of symbols) {
+      try {
+        results[symbol] = await this.predict(symbol, horizon, options);
+      } catch (error: any) {
+        results[symbol] = new PredictionError(
+          error.message || `Failed to predict ${symbol}`,
+          error.code || 'BATCH_PREDICTION_ERROR'
+        );
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * Get available models for a symbol
+   */
+  async getAvailableModels(symbol: string): Promise<string[]> {
+    try {
+      const response = await stockAPI.listModels();
+      return response.models
+        .filter((model: any) => model.symbol === symbol)
+        .map((model: any) => model.name);
+    } catch (error) {
+      console.warn(`[PredictionService] Failed to fetch models for ${symbol}:`, error);
+      return [];
+    }
+  }
+}
+
+// Export singleton instance
+export const predictionService = PredictionService.getInstance();

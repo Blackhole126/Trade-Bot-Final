@@ -1,0 +1,87 @@
+services:
+
+  mongo:
+    image: mongo:7
+    ports:
+    - "27017:27017"
+    env_file:
+    - .env
+    networks:
+      - HR_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+    - mongo_data:/data/db
+    restart: unless-stopped
+
+
+  backend:
+    image: backend
+    build: ./backend
+    ports:
+    - "8000:8000"
+    networks:
+      - HR_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/tools/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+  
+  backend-2:
+    image: backend-2
+    build: ./backend/hft2/backend
+    ports:
+    - "5000:5000"
+    env_file:
+    - ./backend/hft2/backend/.env
+    networks:
+      - HR_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    image: frontend
+    build: ./trading-dashboard
+    ports:
+    - "5173:5173"
+    env_file:
+    - ./trading-dashboard/.env
+    networks:
+      - HR_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+
+networks:
+  HR_network:
+    driver: bridge

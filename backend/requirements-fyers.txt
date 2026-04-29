@@ -1,0 +1,17 @@
+# Fyers API v3 - install separately due to aiohttp==3.9.3 requirement
+# Install order:
+#   1. pip install -r backend/requirements-unified.txt
+#   2. pip install -r backend/requirements-optional.txt
+#   3. pip install -r backend/requirements-fyers.txt
+#
+# IMPORTANT: On Python 3.13, aiohttp==3.9.3 requires Microsoft Visual C++ Build Tools
+# because there are no pre-built wheels for Python 3.13.
+#
+# Option 1 (Recommended): Install C++ Build Tools
+#   Download and install: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+#   Then run: pip install -r backend/requirements-fyers.txt
+#
+# Option 2: If build fails, Fyers will run in mock mode (FYERS_ALLOW_MOCK=true)
+#   The backend will still start, but Fyers data will be mocked.
+
+fyers-apiv3>=3.0.0,<4.0.0

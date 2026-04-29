@@ -1,0 +1,58 @@
+
+# Create venv: python -m venv .venv
+# Install (PowerShell): $py = "<project>\backend\.venv\Scripts\python.exe"; & $py -m pip install -r requirements-unified.txt
+# Do NOT use bare `pip install` — it installs to the user directory, not the venv.
+# This file is the union of "minimal" deps so pip resolves without resolution-too-deep.
+# Dashboard, login/signup, run_hft2, and api_server (stock_analysis_complete) work with this.
+
+# FastAPI & server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+python-dotenv>=1.0.0
+
+# Data & APIs
+pandas>=2.1.0
+numpy>=1.26.4
+requests>=2.31.0
+yfinance>=0.2.18
+dhanhq>=1.3.0
+pandas-market-calendars>=4.3.0
+
+# For main_backend (api_server) stock_analysis_complete
+pandas-ta-classic @ https://github.com/xgboosted/pandas-ta-classic/archive/master.zip
+
+# Auth & DB
+pymongo>=4.6.0
+PyJWT>=2.8.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+SQLAlchemy>=2.0.0
+alembic>=1.12.0
+aiosqlite>=0.19.0
+
+# ML (needed for api_server/stock_analysis_complete)
+scikit-learn>=1.3.0
+scipy>=1.11.0
+xgboost>=1.7.0
+lightgbm>=4.0.0
+torch>=2.0.0
+
+# Utilities
+tenacity>=8.2.0
+pytz>=2023.3
+apscheduler>=3.10.0
+aiohttp>=3.10.0
+websockets>=12.0
+psutil>=5.9.0
+beautifulsoup4>=4.12.0
+dataclasses-json>=0.6.0
+typing-extensions>=4.8.0
+ta>=0.10.2
+prometheus-client>=0.19.0
+vaderSentiment>=3.3.2
+praw>=7.7.0
+gymnasium
+gnews
+catboost
+selenium

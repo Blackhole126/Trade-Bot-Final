@@ -1,0 +1,261 @@
+{
+  "mcp_version": "1.0",
+  "tools": [
+    {
+      "name": "predict",
+      "description": "Generate stock price predictions using ensemble ML models (LightGBM + XGBoost + DQN)",
+      "endpoint": "/tools/predict",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbols": {
+          "type": "array",
+          "required": true,
+          "description": "List of stock symbols to predict",
+          "example": ["AAPL", "RPOWER.NS"]
+        },
+        "horizon": {
+          "type": "string",
+          "required": false,
+          "default": "intraday",
+          "options": ["intraday", "short", "long"],
+          "description": "Prediction time horizon"
+        },
+        "risk_profile": {
+          "type": "string",
+          "required": false,
+          "options": ["low", "moderate", "high"],
+          "description": "Filter by risk profile"
+        },
+        "stop_loss_pct": {
+          "type": "number",
+          "required": false,
+          "description": "Stop loss percentage for risk-adjusted scoring"
+        },
+        "capital_risk_pct": {
+          "type": "number",
+          "required": false,
+          "description": "Capital risk percentage"
+        },
+        "drawdown_limit_pct": {
+          "type": "number",
+          "required": false,
+          "description": "Maximum drawdown limit percentage"
+        }
+      },
+      "returns": {
+        "metadata": "Prediction metadata (count, horizon, timestamp)",
+        "predictions": "Array of prediction objects with prices, actions, confidence"
+      }
+    },
+    {
+      "name": "scan_all",
+      "description": "Scan multiple symbols and return ranked shortlist based on predictions",
+      "endpoint": "/tools/scan_all",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbols": {
+          "type": "array",
+          "required": true,
+          "description": "List of stock symbols to scan (max 50)"
+        },
+        "horizon": {
+          "type": "string",
+          "required": false,
+          "default": "intraday"
+        },
+        "min_confidence": {
+          "type": "number",
+          "required": false,
+          "default": 0.3,
+          "description": "Minimum confidence threshold (0.0-1.0)"
+        },
+        "stop_loss_pct": {
+          "type": "number",
+          "required": false
+        },
+        "capital_risk_pct": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "returns": {
+        "metadata": "Scan metadata (total scanned, passed filter)",
+        "shortlist": "Top 10 ranked predictions"
+      }
+    },
+    {
+      "name": "analyze",
+      "description": "Analyze single symbol across multiple horizons with risk parameters",
+      "endpoint": "/tools/analyze",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbol": {
+          "type": "string",
+          "required": true,
+          "description": "Stock symbol to analyze"
+        },
+        "horizons": {
+          "type": "array",
+          "required": false,
+          "default": ["intraday"],
+          "description": "List of horizons to analyze"
+        },
+        "stop_loss_pct": {
+          "type": "number",
+          "required": false,
+          "default": 2.0
+        },
+        "capital_risk_pct": {
+          "type": "number",
+          "required": false,
+          "default": 1.0
+        },
+        "drawdown_limit_pct": {
+          "type": "number",
+          "required": false,
+          "default": 5.0
+        }
+      },
+      "returns": {
+        "horizon_analysis": "Predictions for each horizon",
+        "position_sizing": "Recommended position sizes",
+        "recommendation": "Overall recommendation with consensus"
+      }
+    },
+    {
+      "name": "feedback",
+      "description": "Provide human feedback for RL agent fine-tuning (Human-in-the-Loop)",
+      "endpoint": "/tools/feedback",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbol": {
+          "type": "string",
+          "required": true
+        },
+        "predicted_action": {
+          "type": "string",
+          "required": true,
+          "options": ["LONG", "SHORT", "HOLD"]
+        },
+        "user_feedback": {
+          "type": "string",
+          "required": true,
+          "options": ["correct", "incorrect"]
+        },
+        "actual_return": {
+          "type": "number",
+          "required": false,
+          "description": "Actual return percentage"
+        }
+      },
+      "returns": {
+        "status": "success or error",
+        "adjustment_applied": "Boolean indicating if DQN was updated",
+        "total_feedback_count": "Total feedback entries in memory"
+      }
+    },
+    {
+      "name": "train_rl",
+      "description": "Run short RL training loop for DQN agent and return reward statistics",
+      "endpoint": "/tools/train_rl",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbol": {
+          "type": "string",
+          "required": true,
+          "description": "Stock symbol to train on"
+        },
+        "horizon": {
+          "type": "string",
+          "required": false,
+          "default": "intraday"
+        },
+        "n_episodes": {
+          "type": "integer",
+          "required": false,
+          "default": 10,
+          "description": "Number of training episodes (10-100)"
+        },
+        "force_retrain": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Force retrain even if models exist"
+        }
+      },
+      "returns": {
+        "status": "Training status",
+        "summary": "Reward statistics and training metrics",
+        "episodes_completed": "Number of episodes completed",
+        "final_epsilon": "Final epsilon value",
+        "avg_reward": "Average reward per episode"
+      }
+    },
+    {
+      "name": "fetch_data",
+      "description": "Retrieve batch data for symbols (for orchestrator use)",
+      "endpoint": "/tools/fetch_data",
+      "method": "POST",
+      "authentication": "required",
+      "rate_limit": true,
+      "parameters": {
+        "symbols": {
+          "type": "array",
+          "required": true,
+          "description": "List of symbols to fetch data for"
+        },
+        "period": {
+          "type": "string",
+          "required": false,
+          "default": "2y",
+          "options": ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
+          "description": "Historical data period"
+        },
+        "include_features": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether to calculate and include technical indicators"
+        },
+        "refresh": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Force refresh data from Yahoo Finance"
+        }
+      },
+      "returns": {
+        "data": "Batch data for all requested symbols",
+        "metadata": "Fetch metadata (symbols, period, timestamp)",
+        "features_included": "Boolean indicating if features were calculated"
+      }
+    }
+  ],
+  "authentication": {
+    "type": "JWT",
+    "header": "Authorization: Bearer <token>",
+    "login_endpoint": "/auth/login",
+    "token_expiration": "24 hours"
+  },
+  "rate_limits": {
+    "per_minute": 20,
+    "per_hour": 200
+  },
+  "logging": {
+    "request_log": "data/logs/api_requests.jsonl",
+    "mcp_request_log": "data/logs/mcp_requests.jsonl",
+    "mcp_response_log": "data/logs/mcp_responses.jsonl",
+    "security_log": "data/logs/security.jsonl"
+  }
+}
+
