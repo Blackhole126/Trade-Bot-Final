@@ -14,30 +14,32 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS predictions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        symbol TEXT,
-        status TEXT,
-        current_price REAL,
-        predicted_price REAL,
-        predicted_return REAL,
-        action TEXT,
-        confidence REAL,
-        error TEXT,
-        timestamp TEXT
-    )
-    """)
+CREATE TABLE IF NOT EXISTS predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    status TEXT,
+    current_price REAL,
+    predicted_price REAL,
+    predicted_return REAL,
+    action TEXT,
+    confidence REAL,
+    error TEXT,
+    timestamp TEXT,
+    request_id TEXT  
+)
+""") 
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        symbol TEXT,
-        predicted_action TEXT,
-        user_feedback TEXT,
-        actual_return REAL,
-        timestamp TEXT
-    )
-    """)
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    predicted_action TEXT,
+    user_feedback TEXT,
+    actual_return REAL,
+    timestamp TEXT,
+    request_id TEXT
+)
+""")
 
     cursor.execute("""
 CREATE TABLE IF NOT EXISTS portfolio (
@@ -46,7 +48,8 @@ CREATE TABLE IF NOT EXISTS portfolio (
     symbol TEXT,
     shares INTEGER,
     avg_price REAL,
-    current_price REAL
+    current_price REAL,
+    request_id TEXT
 )
 """)
     
@@ -59,6 +62,23 @@ CREATE TABLE IF NOT EXISTS api_logs (
     success INTEGER,
     error TEXT,
     timestamp TEXT
+)
+""")
+    
+    cursor.execute("""
+CREATE TABLE IF NOT EXISTS news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    news_id TEXT,
+    title TEXT,
+    content TEXT,
+    source TEXT,
+    timestamp TEXT,
+    category TEXT,
+    region TEXT,
+    sentiment TEXT,
+    impact_score REAL,
+    tags TEXT,
+    request_id TEXT
 )
 """)
 

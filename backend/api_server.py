@@ -157,16 +157,23 @@ def update_portfolio(data: dict):
 
         # insert new
         for h in holdings:
-            cursor.execute("""
-                INSERT INTO portfolio (portfolio_id, symbol, shares, avg_price, current_price)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                portfolio_id,
-                h["symbol"],
-                h["shares"],
-                h["avgPrice"],
-                h["currentPrice"]
-            ))
+           cursor.execute("""
+INSERT INTO portfolio (
+    portfolio_id,
+    symbol,
+    shares,
+    avg_price,
+    current_price,
+    request_id
+) VALUES (?, ?, ?, ?, ?, ?)
+""", (
+    portfolio_id,
+    h["symbol"],
+    h["shares"],
+    h["avgPrice"],
+    h.get("currentPrice", h.get("avgPrice")),
+    request_id
+))
 
         conn.commit()
         conn.close()
@@ -849,21 +856,22 @@ async def predict(
 
             for p in response["data"]["predictions"]:
                 cursor.execute("""
-    INSERT INTO predictions (
-        symbol, status, current_price,
-        predicted_price, predicted_return,
-        action, confidence, timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-""", (
-    p.get("symbol"),
-    p.get("status"),
-    p.get("current_price"),
-    p.get("predicted_price"),
-    p.get("predicted_return"),
-    p.get("action"),
-    p.get("confidence"),
-    datetime.utcnow().isoformat()
-))
+                INSERT INTO predictions (
+                    symbol, status, current_price,
+                    predicted_price, predicted_return,
+                    action, confidence, timestamp, request_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    p.get("symbol"),
+                    p.get("status"),
+                    p.get("current_price"),
+                    p.get("predicted_price"),
+                    p.get("predicted_return"),
+                    p.get("action"),
+                    p.get("confidence"),
+                    datetime.utcnow().isoformat(),
+                    request_id
+                ))
 
             conn.commit()
             conn.close()
@@ -871,17 +879,26 @@ async def predict(
         except Exception as db_error:
             logger.error(f"Prediction DB insert failed: {db_error}", exc_info=True)
 
-            raise HTTPException(
-                status_code=500,
-                detail="Database write failed. Predictions not saved."
-            )
+            error_response = {
+                "success": False,
+                "data": {},
+                "error": "Database write failed. Predictions not saved.",
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": request_id
+            }
+
+            log_api_request('/tools/predict', data, error_response, 500)
+            log_to_db('/tools/predict', data, error_response)
+
+            return JSONResponse(status_code=500, content=error_response)
 
         # -----------------------------
-        # 6. LOG ONLY AFTER SUCCESS
+        # 6. SUCCESS RESPONSE
         # -----------------------------
         log_api_request('/tools/predict', data, response, 200)
         log_to_db('/tools/predict', data, response)
-        return response
+
+        return JSONResponse(status_code=200, content=response)
 
     # -----------------------------
     # 7. HANDLED HTTP ERRORS
@@ -1138,20 +1155,22 @@ async def feedback(
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO feedback (
-                    symbol,
-                    predicted_action,
-                    user_feedback,
-                    actual_return,
-                    timestamp
-                ) VALUES (?, ?, ?, ?, ?)
-            """, (
-                symbol,
-                predicted_action,
-                user_feedback,
-                actual_return,
-                datetime.utcnow().isoformat()
-            ))
+    INSERT INTO feedback (
+        symbol,
+        predicted_action,
+        user_feedback,
+        actual_return,
+        timestamp,
+        request_id
+    ) VALUES (?, ?, ?, ?, ?, ?)
+""", (
+    symbol,
+    predicted_action,
+    user_feedback,
+    actual_return,
+    datetime.utcnow().isoformat(),
+    request_id
+))
 
             conn.commit()
             conn.close()
@@ -1545,3 +1564,119 @@ def retrieve_knowledge(query: str = ""):
             pass
 
         return response
+    
+@app.post("/news/ingest")
+def ingest_news(data: dict):
+    try:
+        request_id = f"news_{int(time.time())}_{str(uuid.uuid4())[:6]}"
+
+        # -------------------------
+        # 1. VALIDATION
+        # -------------------------
+        required = ["news_id", "title", "content", "source", "timestamp"]
+        for field in required:
+            if field not in data:
+                raise HTTPException(status_code=400, detail=f"Missing field: {field}")
+
+        metadata = data.get("metadata", {})
+        category = metadata.get("category", "general")
+        region = metadata.get("region", "global")
+
+        # -------------------------
+        # 2. SIMPLE NLP LOGIC
+        # -------------------------
+        text = data["content"].lower()
+
+        if "profit" in text or "growth" in text:
+            sentiment = "positive"
+        elif "loss" in text or "decline" in text:
+            sentiment = "negative"
+        else:
+            sentiment = "neutral"
+
+        impact_score = round(min(len(text) / 1000, 1), 2)
+
+        tags = []
+        if "stock" in text:
+            tags.append("market")
+        if "policy" in text:
+            tags.append("policy")
+
+        # -------------------------
+        # 3. DB WRITE
+        # -------------------------
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+        INSERT INTO news (
+            news_id, title, content, source, timestamp,
+            category, region, sentiment, impact_score, tags, request_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data["news_id"],
+            data["title"],
+            data["content"],
+            data["source"],
+            data["timestamp"],
+            category,
+            region,
+            sentiment,
+            impact_score,
+            ",".join(tags),
+            request_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        # -------------------------
+        # 4. RESPONSE
+        # -------------------------
+        return {
+            "success": True,
+            "data": {
+                "sentiment": sentiment,
+                "impact_score": impact_score,
+                "tags": tags
+            },
+            "error": None,
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": request_id
+        }
+
+    except HTTPException as e:
+        return {
+            "success": False,
+            "data": {},
+            "error": e.detail,
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": f"news_error_{int(time.time())}"
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "data": {},
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": f"news_error_{int(time.time())}"
+        }
+    
+@app.get("/news/{news_id}")
+def get_news(news_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM news WHERE news_id = ?", (news_id,))
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if not row:
+        return {"success": False, "error": "Not found"}
+
+    columns = [desc[0] for desc in cursor.description]
+    data = dict(zip(columns, row))
+
+    return {"success": True, "data": data}

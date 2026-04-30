@@ -1,0 +1,113 @@
+{
+  "endpoint": "/tools/predict",
+  "request": {
+    "symbols": ["TCS.NS"],
+    "horizon": "intraday"
+  },
+  "api_response": {
+    "symbol": "TCS.NS",
+    "current_price": 2470.199951171875,
+    "predicted_price": 2569.01,
+    "predicted_return": 4.0,
+    "action": "LONG",
+    "confidence": 0.5679,
+    "request_id": "predict_1777534338_d8b612",
+    "timestamp": "2026-04-30T07:32:18.345210"
+  },
+  "db_entry": {
+    "symbol": "TCS.NS",
+    "current_price": 2470.199951171875,
+    "predicted_price": 2569.01,
+    "request_id": "predict_1777534338_d8b612",
+    "timestamp": "2026-04-30T07:32:18.346216"
+  },
+  "log_entry": {
+    "endpoint": "/tools/predict",
+    "request_id": "predict_1777534338_d8b612",
+    "timestamp": "2026-04-30T07:32:18.355791"
+  },
+  "validation": {
+    "symbol_match": true,
+    "price_match": true,
+    "request_id_match": true,
+    "timestamp_match": true
+  }
+}
+
+{
+
+  "endpoint": "/tools/feedback",
+  "request": {
+    "symbol": "TCS.NS",
+    "predicted_action": "LONG",
+    "user_feedback": "correct",
+    "actual_return": 4.0
+  },
+  "api_response": {
+    "symbol": "TCS.NS",
+    "predicted_action": "LONG",
+    "user_feedback": "correct",
+    "actual_return": 4.0,
+    "request_id": "feedback_1777535072_090d13",
+    "timestamp": "2026-04-30T07:44:32.218017"
+  },
+  "db_entry": {
+    "symbol": "TCS.NS",
+    "predicted_action": "LONG",
+    "user_feedback": "correct",
+    "actual_return": 4.0,
+    "request_id": "feedback_1777535072_090d13",
+    "timestamp": "2026-04-30T07:44:32.219537"
+  },
+  "log_entry": {
+    "endpoint": "/tools/feedback",
+    "request_id": "feedback_1777535072_090d13",
+    "timestamp": "2026-04-30T07:44:32.238746"
+  },
+  "validation": {
+    "symbol_match": true,
+    "action_match": true,
+    "feedback_match": true,
+    "request_id_match": true,
+    "timestamp_match": true
+  }
+}
+
+{
+  "endpoint": "/portfolio/update",
+  "request": {
+    "portfolio_id": "seed",
+    "holdings": [
+      {
+        "symbol": "TCS.NS",
+        "shares": 10,
+        "avgPrice": 2450
+      }
+    ]
+  },
+  "api_response": {
+    "portfolio_id": "seed",
+    "count": 1,
+    "request_id": "portfolio_1777536038_137dbb",
+    "timestamp": "2026-04-30T08:00:38.100805"
+  },
+  "db_entry": {
+    "portfolio_id": "seed",
+    "symbol": "TCS.NS",
+    "shares": 10,
+    "avg_price": 2450,
+    "current_price": 2450,
+    "request_id": "portfolio_1777536038_137dbb"
+  },
+  "log_entry": {
+    "endpoint": "/portfolio/update",
+    "request_id": "portfolio_1777536038_137dbb",
+    "timestamp": "2026-04-30T08:00:38.101798"
+  },
+  "validation": {
+    "symbol_match": true,
+    "quantity_match": true,
+    "request_id_match": true,
+    "timestamp_match": true
+  }
+}
