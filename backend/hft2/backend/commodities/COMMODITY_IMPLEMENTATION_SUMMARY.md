@@ -184,10 +184,10 @@ TOTAL: 2,748 lines of code + documentation
 ### Quick Start
 
 ```python
-from backend.db.samruddhi_memory import FinancialMemoryManager
-from backend.commodities.commodity_data_ingestion import CommodityDataIngestor
-from backend.commodities.commodity_feature_engine import CommodityFeatureEngine
-from backend.commodities.commodity_signal_engine import CommoditySignalEngine
+from hft2.backend.db.samruddhi_memory import FinancialMemoryManager
+from hft2.backend.commodities.commodity_data_ingestion import CommodityDataIngestor
+from hft2.backend.commodities.commodity_feature_engine import CommodityFeatureEngine
+from hft2.backend.commodities.commodity_signal_engine import CommoditySignalEngine
 
 # Initialize
 memory = FinancialMemoryManager()
@@ -398,8 +398,8 @@ System Status: ✅ OPERATIONAL
 1. **Download Initial Datasets**
    ```bash
    python -c "
-   from backend.commodities.commodity_data_ingestion import CommodityDataIngestor
-   from backend.db.samruddhi_memory import FinancialMemoryManager
+   from hft2.backend.commodities.commodity_data_ingestion import CommodityDataIngestor
+   from hft2.backend.db.samruddhi_memory import FinancialMemoryManager
    
    memory = FinancialMemoryManager()
    ingestor = CommodityDataIngestor(memory)

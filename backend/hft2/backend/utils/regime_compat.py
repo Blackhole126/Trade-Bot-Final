@@ -32,7 +32,7 @@ def safe_detect_market_regime(detector_or_obj: Any, price_history: Optional[Any]
     """
     # Local import to avoid circular imports
     try:
-        from backend.utils.market_regime_detector import get_regime_detector
+        from hft2.backend.utils.market_regime_detector import get_regime_detector
     except Exception:
         try:
             # try alternative import path

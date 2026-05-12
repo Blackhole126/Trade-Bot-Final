@@ -11,10 +11,12 @@ from typing import List, Dict, Optional, Any
 from pathlib import Path
 import sys
 from urllib import response
+from hft2.backend.hft_manager import HFTSignal
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from hft2.backend.hft_manager import HFTManager
 from stock_analysis_complete import (
     EnhancedDataIngester,
     FeatureEngineer,
@@ -119,14 +121,15 @@ class MCPAdapter:
         logger.info(f"MCP Response [{request_id}]: {duration_ms:.2f}ms")
     
     def predict(
-        self,
-        symbols: List[str],
-        horizon: str = "intraday",
-        risk_profile: Optional[str] = None,
-        stop_loss_pct: Optional[float] = None,
-        capital_risk_pct: Optional[float] = None,
-        drawdown_limit_pct: Optional[float] = None
-    ) -> Dict[str, Any]:
+    self,
+    symbols: List[str],
+    horizon: str = "intraday",
+    risk_profile: Optional[str] = None,
+    stop_loss_pct: Optional[float] = None,
+    capital_risk_pct: Optional[float] = None,
+    drawdown_limit_pct: Optional[float] = None,
+    news_data: Optional[List[Dict]] = None
+) -> Dict[str, Any]:
         """
         MCP Tool: predict
         
@@ -243,7 +246,12 @@ class MCPAdapter:
                     # STEP 4: Get prediction
                     print(f"[STEP 4/4] Generating prediction using ensemble of 4 models...", flush=True)
                     print("[pipe] predict_stock_price...", flush=True)
-                    prediction = predict_stock_price(symbol, horizon=horizon, verbose=True)
+                    prediction = predict_stock_price(
+                            symbol,
+                            horizon=horizon,
+                            verbose=True,
+                            news_data=news_data
+                        )
                     print("[pipe] predict_stock_price done", flush=True)
                     print(f"[STEP 4/4] [OK] Prediction generated!\n", flush=True)
                     
@@ -258,6 +266,195 @@ class MCPAdapter:
                             prediction["horizon_details"]["risk_profile"] = risk_profile
                         
                         predictions.append(prediction)
+
+                        # PHASE 5 — Emit execution signal
+                        try:
+
+                            from datetime import datetime
+                            import uuid
+
+                            from hft2.backend.db.samruddhi_memory import (
+                                FinancialMemoryManager,
+                                StrategySignal,
+                                ShadowTrade,
+                                Portfolio
+                            )
+
+                            from hft2.backend.hft_manager import HFTManager
+
+                            action = prediction["action"]
+
+                            if action == "SHORT":
+                                action = "SELL"
+                            elif action == "LONG":
+                                action = "BUY"
+
+                            signal = HFTSignal(
+                                symbol=prediction["symbol"],
+                                timestamp=datetime.now(),
+                                action=action,
+                                confidence=float(prediction["confidence"]),
+                                spread_bps=0.0,
+                                market_regime="ML_PREDICTION",
+                                volatility=0.0,
+                                karma_score=0.0,
+                                reason=f"ML prediction {action}"
+                            )
+
+                            hft_config = {
+                                "enabled": True,
+                                "shadow_mode": True
+                            }
+
+                            memory = FinancialMemoryManager()
+                            session = memory.get_session()
+
+                            try:
+
+                                # -----------------------------
+                                # Phase 5: strategy_signals
+                                # -----------------------------
+                                db_signal = StrategySignal(
+                                    user_id="system",
+                                    signal_id=str(uuid.uuid4()),
+                                    strategy_id="prediction_engine_v1",
+                                    symbol=prediction["symbol"],
+                                    signal_type=action,
+                                    signal_strength=float(prediction["confidence"]),
+                                    confidence=float(prediction["confidence"]),
+                                    market_price=float(prediction["current_price"]),
+                                    market_regime="ML_PREDICTION",
+                                    volatility_regime="NORMAL",
+                                    features_json=prediction,
+                                    was_executed=False,
+                                    timestamp=datetime.utcnow()
+                                )
+
+                                session.add(db_signal)
+                                session.commit()
+
+                                from db_bridge import sync_trade_to_trading_db
+
+                                sync_trade_to_trading_db(
+                                        symbol=prediction["symbol"],
+                                        action=action,
+                                        quantity=1,
+                                        price=float(prediction["current_price"])
+                                    )
+
+                                print(
+                                    f"[PHASE 5] Signal persisted to DB: "
+                                    f"{prediction['symbol']} {action}",
+                                    flush=True
+                                )
+
+                                # -----------------------------
+                                # Phase 6: Shadow Trade
+                                # -----------------------------
+                                trade = ShadowTrade(
+                                    user_id="system",
+                                    trade_id=str(uuid.uuid4()),
+                                    symbol=prediction["symbol"],
+                                    side=action,
+                                    quantity=1,
+                                    entry_price=float(prediction["current_price"]),
+                                    entry_timestamp=datetime.utcnow(),
+                                    status="OPEN",
+
+                                    gross_pnl=0.0,
+                                    total_fees=0.0,
+                                    net_pnl=0.0,
+
+                                    strategy_id="prediction_engine_v1",
+                                    signal_id=db_signal.signal_id,
+                                    confidence=float(prediction["confidence"]),
+
+                                    risk_accepted=True,
+
+                                    metadata_json={
+                                        "predicted_price": float(prediction["predicted_price"]),
+                                        "predicted_return": float(prediction["predicted_return"])
+                                    }
+                                )
+
+                                session.add(trade)
+
+                                # -----------------------------
+                                # Phase 6: Portfolio
+                                # -----------------------------
+                                existing_portfolio = (
+                                    session.query(Portfolio)
+                                    .filter_by(user_id="system")
+                                    .first()
+                                )
+
+                                if not existing_portfolio:
+
+                                    portfolio = Portfolio(
+                                        user_id="system",
+                                        mode="shadow",
+                                        name="System Shadow Portfolio",
+                                        cash=100000.0,
+                                        starting_balance=100000.0,
+                                        realized_pnl=0.0,
+                                        unrealized_pnl=0.0,
+                                        total_fees_paid=0.0
+                                    )
+
+                                    session.add(portfolio)
+
+                                session.commit()
+
+                                from db_bridge import sync_trade_to_trading_db
+
+                                sync_trade_to_trading_db(
+                                    symbol=prediction["symbol"],
+                                    action=action,
+                                    quantity=1,
+                                    price=float(prediction["current_price"])
+                                )
+
+                                print(
+                                    f"[PHASE 6] Trade lifecycle activated: "
+                                    f"{prediction['symbol']} {action}",
+                                    flush=True
+                                )
+
+                            except Exception as db_error:
+
+                                session.rollback()
+
+                                print(
+                                    f"[PHASE 5/6 DB ERROR] {db_error}",
+                                    flush=True
+                                )
+
+                            finally:
+
+                                session.close()
+
+                            # Optional execution hook
+                            hft_manager = HFTManager(config=hft_config)
+
+                            execution_result = hft_manager.execute_shadow_order(
+                                signal=signal,
+                                quantity=1
+                            )
+
+                            prediction["execution_result"] = execution_result
+
+                            print(
+                                f"[PHASE 5] Execution signal emitted: "
+                                f"{action} {prediction['symbol']}",
+                                flush=True
+                            )
+
+                        except Exception as e:
+
+                            print(
+                                f"[PHASE 5 ERROR] {e}",
+                                flush=True
+                            )
                         
                         # Log to main predictions file
                         self._log_prediction_to_file(prediction)

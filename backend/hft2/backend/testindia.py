@@ -2132,7 +2132,7 @@ class Stock:
             try:
                 from utils.market_regime_detector import get_regime_detector
             except Exception:
-                from backend.utils.market_regime_detector import get_regime_detector
+                from hft2.backend.utils.market_regime_detector import get_regime_detector
 
             detector = get_regime_detector()
             result = detector.detect_regime(price_history)
@@ -2974,14 +2974,14 @@ class Stock:
     def _get_db_stop_loss_take_profit(self, ticker):
         """Get stop loss and take profit values from database"""
         try:
-            from backend.db.database import DatabaseManager
+            from hft2.backend.db.database import DatabaseManager
 
             db_manager = DatabaseManager()
             session = db_manager.Session()
 
             try:
                 # Query the most recent buy trade for this ticker
-                from backend.db.database import Trade
+                from hft2.backend.db.database import Trade
                 latest_buy = session.query(Trade).filter(
                     Trade.ticker == ticker,
                     Trade.action == 'buy'
@@ -3573,7 +3573,7 @@ class Stock:
             indian_news_sentiment = neutral_sentiment.copy()
             try:
                 # Import SentimentTool
-                from backend.mcp_server.tools.sentiment_tool import SentimentTool
+                from hft2.backend.mcp_server.tools.sentiment_tool import SentimentTool
 
                 # Initialize SentimentTool with Indian news support
                 sentiment_tool = SentimentTool({
@@ -5835,7 +5835,7 @@ class Stock:
                                 try:
                                     # Detect current market regime (safe)
                                     try:
-                                        from backend.utils.regime_compat import safe_detect_market_regime
+                                        from hft2.backend.utils.regime_compat import safe_detect_market_regime
                                     except Exception:
                                         from utils.regime_compat import safe_detect_market_regime
                                     market_regime = safe_detect_market_regime(
@@ -6958,7 +6958,7 @@ class StockTradingBot:
                     try:
                         # Detect market regime for this period (safe)
                         try:
-                            from backend.utils.regime_compat import safe_detect_market_regime
+                            from hft2.backend.utils.regime_compat import safe_detect_market_regime
                         except Exception:
                             from utils.regime_compat import safe_detect_market_regime
                         regime = safe_detect_market_regime(self, period_data)
@@ -7343,7 +7343,7 @@ class StockTradingBot:
                 # Calculate dynamic weights for decision making
                 if history is not None:
                     try:
-                        from backend.utils.regime_compat import safe_detect_market_regime
+                        from hft2.backend.utils.regime_compat import safe_detect_market_regime
                     except Exception:
                         from utils.regime_compat import safe_detect_market_regime
                     market_regime = safe_detect_market_regime(self, history)
@@ -8479,7 +8479,7 @@ class StockTradingBot:
                 "Running continuous stop-loss/take-profit check on all holdings")
 
             # Get live portfolio holdings from database
-            from backend.db.database import DatabaseManager, Holding, Portfolio, Trade
+            from hft2.backend.db.database import DatabaseManager, Holding, Portfolio, Trade
             db_manager = DatabaseManager()
             session = db_manager.Session()
 
@@ -8619,7 +8619,7 @@ class StockTradingBot:
                 "Running continuous stop-loss/take-profit check on all holdings")
 
             # Get live portfolio holdings from database
-            from backend.db.database import DatabaseManager, Holding, Portfolio, Trade
+            from hft2.backend.db.database import DatabaseManager, Holding, Portfolio, Trade
             db_manager = DatabaseManager()
             session = db_manager.Session()
 
@@ -8802,14 +8802,14 @@ class StockTradingBot:
     def _get_db_stop_loss_take_profit(self, ticker):
         """Get stop loss and take profit values from database"""
         try:
-            from backend.db.database import DatabaseManager
+            from hft2.backend.db.database import DatabaseManager
 
             db_manager = DatabaseManager()
             session = db_manager.Session()
 
             try:
                 # Query the most recent buy trade for this ticker
-                from backend.db.database import Trade
+                from hft2.backend.db.database import Trade
                 latest_buy = session.query(Trade).filter(
                     Trade.ticker == ticker,
                     Trade.action == 'buy'
@@ -8833,7 +8833,7 @@ class StockTradingBot:
         try:
             logger.debug("Running one-time stop-loss/take-profit check on all holdings")
 
-            from backend.db.database import DatabaseManager, Holding, Portfolio, Trade
+            from hft2.backend.db.database import DatabaseManager, Holding, Portfolio, Trade
             db_manager = DatabaseManager()
             session = db_manager.Session()
 

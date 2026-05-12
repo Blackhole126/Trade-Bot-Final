@@ -259,10 +259,10 @@ Commodity Features → Signal Generation → Strategy Signals → Karma Logs
 ### Quick Start Example
 
 ```python
-from backend.db.samruddhi_memory import FinancialMemoryManager
-from backend.commodities.commodity_data_ingestion import CommodityDataIngestor
-from backend.commodities.commodity_feature_engine import CommodityFeatureEngine
-from backend.commodities.commodity_signal_engine import CommoditySignalEngine
+from hft2.backend.db.samruddhi_memory import FinancialMemoryManager
+from hft2.backend.commodities.commodity_data_ingestion import CommodityDataIngestor
+from hft2.backend.commodities.commodity_feature_engine import CommodityFeatureEngine
+from hft2.backend.commodities.commodity_signal_engine import CommoditySignalEngine
 
 # Initialize
 memory = FinancialMemoryManager()
@@ -453,10 +453,10 @@ POST /api/commodities/download?dataset={dataset_id}
 """Test commodity signal generation pipeline"""
 
 from datetime import datetime, timedelta
-from backend.db.samruddhi_memory import FinancialMemoryManager
-from backend.commodities.commodity_data_ingestion import CommodityDataIngestor
-from backend.commodities.commodity_feature_engine import CommodityFeatureEngine
-from backend.commodities.commodity_signal_engine import CommoditySignalEngine
+from hft2.backend.db.samruddhi_memory import FinancialMemoryManager
+from hft2.backend.commodities.commodity_data_ingestion import CommodityDataIngestor
+from hft2.backend.commodities.commodity_feature_engine import CommodityFeatureEngine
+from hft2.backend.commodities.commodity_signal_engine import CommoditySignalEngine
 
 def test_pipeline():
     # Initialize

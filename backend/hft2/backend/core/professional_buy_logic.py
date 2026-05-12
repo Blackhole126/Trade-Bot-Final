@@ -2871,7 +2871,7 @@ class ProfessionalBuyLogic:
             try:
                 from ..utils.multi_timeframe_analyzer import get_mtf_analyzer
             except ImportError:
-                from backend.utils.multi_timeframe_analyzer import get_mtf_analyzer
+                from hft2.backend.utils.multi_timeframe_analyzer import get_mtf_analyzer
 
             # Get analyzer instance
             mtf_analyzer = get_mtf_analyzer()
@@ -2926,7 +2926,7 @@ class ProfessionalBuyLogic:
             try:
                 from ..utils.market_regime_detector import get_regime_detector
             except ImportError:
-                from backend.utils.market_regime_detector import get_regime_detector
+                from hft2.backend.utils.market_regime_detector import get_regime_detector
 
             regime_detector = get_regime_detector()
             regime_params = regime_detector.get_regime_parameters()

@@ -26,6 +26,14 @@ from utils.ensemble_optimizer import get_ensemble_optimizer
 
 logger = logging.getLogger(__name__)
 
+from datetime import datetime
+import uuid
+
+from db.samruddhi_memory import (
+    FinancialMemoryManager,
+    StrategySignal
+)
+
 @dataclass
 class PredictionRanking:
     """Prediction ranking result"""
@@ -54,6 +62,7 @@ class PredictionTool:
         
         # Initialize ensemble optimizer
         self.ensemble_optimizer = get_ensemble_optimizer()
+        self.memory_manager = FinancialMemoryManager()
         
         # Ollama configuration for natural language processing
         self.ollama_enabled = config.get("ollama_enabled", False)
@@ -63,6 +72,8 @@ class PredictionTool:
         logger.info(f"Prediction Tool {self.tool_id} initialized")
     
     async def rank_predictions(self, arguments: Dict[str, Any], session_id: str) -> MCPToolResult:
+        print("RANK PREDICTIONS CALLED")
+
         """
         Rank predictions from RL agents and other models
         
@@ -103,6 +114,8 @@ class PredictionTool:
             
             # Sort by score
             ranked_predictions.sort(key=lambda x: x.score, reverse=True)
+            await self.emit_strategy_signals(ranked_predictions)
+            print("SIGNAL EMISSION COMPLETED")
             
             # Generate explanations if requested
             if include_explanations:
@@ -304,6 +317,7 @@ class PredictionTool:
         except Exception as e:
             logger.warning(f"Explanation generation error: {e}")
             return "Explanation unavailable"
+        
     
     def get_tool_status(self) -> Dict[str, Any]:
         """Get prediction tool status"""
@@ -313,3 +327,56 @@ class PredictionTool:
             "ollama_model": self.ollama_model,
             "status": "active"
         }
+    
+    async def emit_strategy_signals(self, ranked_predictions):
+        print("EMIT FUNCTION RUNNING")
+        '''Emit prediction signals into strategy_signals table'''
+
+        session = self.memory_manager.get_session()
+
+        try:
+            for prediction in ranked_predictions:
+                print("INSERTING:", prediction.symbol)
+
+                # Decide signal type
+                if prediction.recommendation == "BUY":
+                    signal_type = "ENTRY_LONG"
+                elif prediction.recommendation == "SELL":
+                    signal_type = "EXIT_LONG"
+                else:
+                    continue
+
+                signal = StrategySignal(
+                    user_id="system",
+                    signal_id=str(uuid.uuid4()),
+                    strategy_id="prediction_engine_v1",
+                    symbol=prediction.symbol,
+                    signal_type=signal_type,
+                    signal_strength=float(prediction.score),
+                    confidence=float(prediction.confidence),
+                    market_price=float(
+                        prediction.features.get("price", 0)
+                    ) if prediction.features else 0,
+                    market_regime="UNKNOWN",
+                    volatility_regime="NORMAL",
+                    features_json=prediction.features,
+                    was_executed=False,
+                    timestamp=datetime.utcnow()
+                )
+
+                session.add(signal)
+
+            print("COMMITTING SIGNALS")
+
+            session.commit()
+
+            logger.info(
+                f"Inserted {len(ranked_predictions)} strategy signals"
+            )
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Signal emission failed: {e}")
+
+        finally:
+            session.close()

@@ -468,6 +468,7 @@ class PredictRequest(BaseModel):
     stop_loss_pct: Optional[float] = Field(default=2.0, ge=0.1, le=50.0)
     capital_risk_pct: Optional[float] = Field(default=1.0, ge=0.1, le=100.0)
     drawdown_limit_pct: Optional[float] = Field(default=5.0, ge=0.1, le=100.0)
+    news_data: Optional[List[Dict[str, Any]]] = []
     
     @field_validator('symbols', mode='after')
     @classmethod
@@ -819,7 +820,8 @@ async def predict(
             risk_profile=data.get('risk_profile'),
             stop_loss_pct=data.get('stop_loss_pct'),
             capital_risk_pct=data.get('capital_risk_pct'),
-            drawdown_limit_pct=data.get('drawdown_limit_pct')
+            drawdown_limit_pct=data.get('drawdown_limit_pct'),
+            news_data=data.get('news_data', [])
         )
 
         # -----------------------------

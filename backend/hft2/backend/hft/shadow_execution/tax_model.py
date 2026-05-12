@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Optional
-from backend.hft.models.trade_event import TradeType
+from hft2.backend.trade_event import TradeType
 
 
 @dataclass

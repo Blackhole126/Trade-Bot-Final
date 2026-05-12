@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Tuple
-from backend.hft.models.trade_event import FeeBreakdown, TradeType
+from hft2.backend.hft.models.trade_event import FeeBreakdown, TradeType
 from .tax_model import TaxModel, TaxClassification
 
 

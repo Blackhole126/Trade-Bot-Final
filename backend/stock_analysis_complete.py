@@ -7,14 +7,18 @@ Integrated with 50+ Technical Indicators
 import sys
 import os
 
+from sqlalchemy import label
+
 # Force unbuffered output for immediate console display
 sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
 sys.stderr.reconfigure(line_buffering=True) if hasattr(sys.stderr, 'reconfigure') else None
 
+from tabnanny import verbose
 import time
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import random
 import pickle
 import json
 import logging
@@ -40,6 +44,89 @@ import zipfile
 import io
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def get_news_label(news_data):
+    try:
+        news_analysis = analyze_news_sentiment(news_data)
+
+        # Handle both dict and float safely
+        if isinstance(news_analysis, dict):
+            score = news_analysis.get("score", 0.0)
+            count = news_analysis.get("count", 0)
+        else:
+            score = float(news_analysis)
+            count = 1 if news_analysis is not None else 0
+
+        if count > 0:
+            if score > 0:
+                return "POSITIVE"
+            elif score < 0:
+                return "NEGATIVE"
+            else:
+                return "NEUTRAL"
+
+    except Exception as e:
+        logger.error(f"News sentiment error: {e}")
+
+    return None
+
+def normalize_datetime_index(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Standardize datetime index safely (handles both tz-aware and tz-naive)
+    """
+
+    # Convert to datetime safely
+    df.index = pd.to_datetime(df.index, errors='coerce')
+
+    # Drop invalid timestamps
+    df = df[~df.index.isna()]
+
+    # ✅ FIX: Handle both tz-aware and naive correctly
+    if isinstance(df.index, pd.DatetimeIndex):
+        if df.index.tz is not None:
+            # tz-aware → convert to UTC → remove tz
+            df.index = df.index.tz_convert('UTC').tz_localize(None)
+        else:
+            # tz-naive → keep as is (DO NOT tz_convert)
+            pass
+
+    # Sort and deduplicate
+    df = df.sort_index()
+    df = df[~df.index.duplicated()]
+
+    return df
+
+# ---------------------------
+# Utility Functions
+# ---------------------------
+
+def normalize_datetime_index(df):
+    ...
+    return df
+
+
+# 👇 ADD HERE
+def compute_news_sentiment(news_data):
+    """
+    Convert news list into a single sentiment score
+    Range: -1 (negative) to +1 (positive)
+    """
+    if not news_data:
+        return 0.0
+
+    sentiments = []
+
+    for item in news_data:
+        s = item.get("sentiment") or item.get("score") or 0
+
+        try:
+            s = float(s)
+        except:
+            s = 0.0
+
+        sentiments.append(s)
+
+    return sum(sentiments) / len(sentiments)
 
 
 # ============================================================================
@@ -82,8 +169,15 @@ def get_symbol_cache_path(symbol: str) -> Path:
 
 # Set random seeds for reproducibility
 RANDOM_SEED = 42
-torch.manual_seed(RANDOM_SEED)
+
+random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
+
+torch.manual_seed(RANDOM_SEED)
+torch.cuda.manual_seed_all(RANDOM_SEED)
+
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 # ============================================================================
@@ -364,6 +458,8 @@ class DQNTradingAgent:
         
         if hasattr(self, 'scaler'):
             features = self.scaler.transform(features)
+
+        self.policy_net.eval()
         
         with torch.no_grad():
             state_tensor = torch.FloatTensor(features).to(self.device)
@@ -756,10 +852,20 @@ class EnhancedDataIngester:
             # Strip whitespace from date values before parsing
             if 'DATE1' in symbol_data.columns:
                 dates = symbol_data['DATE1'].str.strip()
-                result_df.index = pd.to_datetime(dates, format='%d-%b-%Y', errors='coerce')
+                result_df.index = pd.to_datetime(
+                    dates,
+                    format='%d-%b-%Y',
+                    errors='coerce',
+                    utc=True
+                ).tz_localize(None)
             elif 'TIMESTAMP' in symbol_data.columns:
                 dates = symbol_data['TIMESTAMP'].str.strip()
-                result_df.index = pd.to_datetime(dates, format='%d-%b-%Y', errors='coerce')
+                result_df.index = pd.to_datetime(
+                    dates,
+                    format='%d-%b-%Y',
+                    errors='coerce',
+                    utc=True
+                ).tz_localize(None)
             else:
                 # Fallback: use current date
                 result_df.index = pd.DatetimeIndex([datetime.now()])
@@ -810,7 +916,11 @@ class EnhancedDataIngester:
                 if cached_start <= start_date and cached_end >= end_date:
                     # Cache is valid, load it
                     df = pd.DataFrame(cached_data['data'])
-                    df['Date'] = pd.to_datetime(df['Date'])
+                    df['Date'] = pd.to_datetime(
+                        df['Date'],
+                        errors='coerce',
+                        utc=True
+                    ).dt.tz_localize(None)
                     df.set_index('Date', inplace=True)
                     
                     # Filter to requested date range
@@ -972,8 +1082,10 @@ class EnhancedDataIngester:
     def _clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Clean and prepare data"""
         # Remove timezone info from index if present
-        if df.index.tzinfo is not None:
-            df.index = df.index.tz_localize(None)
+        if df.index.tzinfo is None:
+            df = normalize_datetime_index(df)
+        else:
+            df = normalize_datetime_index(df)
         
         # Remove any duplicate indices
         df = df[~df.index.duplicated(keep='first')]
@@ -1375,6 +1487,7 @@ class EnhancedDataIngester:
             # Convert price_history back to DataFrame
             if 'price_history' in json_data and json_data['price_history']:
                 price_df = pd.DataFrame(json_data['price_history'])
+                price_df = normalize_datetime_index(price_df)
                 if not price_df.empty:
                     # Try different date column names
                     date_col = None
@@ -1383,17 +1496,38 @@ class EnhancedDataIngester:
                             date_col = col
                             break
                     
-                    if date_col:
-                        price_df[date_col] = pd.to_datetime(price_df[date_col])
+                if date_col:
+                     # Step 1: Convert to datetime safely (force UTC)
+                        price_df[date_col] = pd.to_datetime(
+                            price_df[date_col],
+                            errors='coerce',
+                            utc=True
+                        )
+
+                    # Step 2: Drop invalid timestamps
+                        price_df = price_df.dropna(subset=[date_col])
+
+                    # Step 3: Convert to timezone-naive (standard format)
+                        price_df[date_col] = price_df[date_col].dt.tz_localize(None)
+
+                    # Step 4: Set as index
                         price_df.set_index(date_col, inplace=True)
-                        # Remove timezone if present
-                        if price_df.index.tzinfo is not None:
-                            price_df.index = price_df.index.tz_localize(None)
-                    else:
-                        # If no date column found, create DatetimeIndex from range
-                        # This shouldn't happen but handle it gracefully
-                        logger.warning("No date column found in price_history, using default index")
-                
+
+                    # Step 5: Ensure index is clean
+                        if isinstance(price_df.index, pd.DatetimeIndex):
+                            if price_df.index.tz is not None:
+                                price_df.index = price_df.index.tz_localize(None)
+
+                    # Step 6: Sort + deduplicate (MANDATORY for ML)
+                        price_df = price_df.sort_index()
+                        price_df = price_df[~price_df.index.duplicated()]
+
+                        logger.info(f"[OK] Date column normalized. Rows: {len(price_df)}")
+
+                else:
+                    # HARD FAIL — do NOT silently continue
+                    raise ValueError("CRITICAL: No date column found in price_history")
+                                
                 json_data['price_history'] = price_df
             else:
                 json_data['price_history'] = pd.DataFrame()
@@ -1812,7 +1946,7 @@ class FeatureEngineer:
         
         latest_timestamp = pd.to_datetime(df.index[-1])
         if hasattr(latest_timestamp, 'tz') and latest_timestamp.tz is not None:
-            latest_timestamp = latest_timestamp.tz_localize(None)
+            latest_timestamp = latest_timestamp.tz_convert('UTC').tz_localize(None)
         
         days_old = (pd.Timestamp.now() - latest_timestamp).days
         
@@ -2045,7 +2179,16 @@ class StockPricePredictor:
         # Use centralized feature selection with adaptive selection based on data size
         # Estimate training size (80% split)
         n_samples = int(len(df) * 0.8)
+
+        if "news_sentiment" not in df.columns:
+            df["news_sentiment"] = 0.0
+
         feature_cols = self.get_feature_columns(df, n_samples=n_samples, use_feature_selection=True)
+
+        if "news_sentiment" in feature_cols:
+            feature_cols.remove("news_sentiment")
+
+        feature_cols.insert(0, "news_sentiment")
         
         X = df[feature_cols]
         y = df['target']
@@ -2668,22 +2811,23 @@ class StockPricePredictor:
         importance = {}
         
         if self.models['random_forest'] is not None:
+            rf_features = self.feature_columns[:len(self.models['random_forest'].feature_importances_)]
             rf_imp = pd.DataFrame({
-                'feature': self.feature_columns,
+                'feature': rf_features,
                 'importance': self.models['random_forest'].feature_importances_
             }).sort_values('importance', ascending=False).head(top_n)
             importance['random_forest'] = rf_imp
         
         if self.models['lightgbm'] is not None:
             lgb_imp = pd.DataFrame({
-                'feature': self.feature_columns,
+                'feature': self.feature_columns[:len(self.models['lightgbm'].feature_importances_)],
                 'importance': self.models['lightgbm'].feature_importances_
             }).sort_values('importance', ascending=False).head(top_n)
             importance['lightgbm'] = lgb_imp
         
         if self.models['xgboost'] is not None:
             xgb_imp = pd.DataFrame({
-                'feature': self.feature_columns,
+                'feature': self.feature_columns[:len(self.models['xgboost'].feature_importances_)],
                 'importance': self.models['xgboost'].feature_importances_
             }).sort_values('importance', ascending=False).head(top_n)
             importance['xgboost'] = xgb_imp
@@ -3257,68 +3401,135 @@ def calculate_technical_indicators(symbol: str):
     print("\n" + "="*80)
     print(" " * 20 + "CALCULATE TECHNICAL INDICATORS")
     print("="*80)
-    
-    # Check if data exists
+
     cache_path = get_symbol_cache_path(symbol)
     json_path = DATA_CACHE_DIR / f"{symbol}_all_data.json"
-    
+
     df = None
-    
-    # Load from JSON cache
+
+    # -------------------------
+    # LOAD FROM CACHE
+    # -------------------------
     if cache_path.exists():
         try:
             with open(cache_path, 'r') as f:
                 cached_data = json.load(f)
-            
-            # Extract price_history from JSON
-            if 'price_history' in cached_data and cached_data['price_history']:
-                df = pd.DataFrame(cached_data['price_history'])
-                if 'Date' in df.columns:
-                    df['Date'] = pd.to_datetime(df['Date'])
-                    df.set_index('Date', inplace=True)
-                elif df.index.name != 'Date' and not isinstance(df.index, pd.DatetimeIndex):
-                    df.index = pd.to_datetime(df.index)
-                print(f"\n[INFO] Loaded data from JSON cache: {len(df)} rows")
+
+            if not cached_data.get('price_history'):
+                print("[ERROR] No price history found in cached data")
+                return False
+
+            df = pd.DataFrame(cached_data['price_history'])
+
+            if df is None or df.empty:
+                print("[ERROR] DataFrame is empty after cache load")
+                return False
+
+            # Handle datetime
+            if 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(
+                    df['Date'],
+                    errors='coerce',
+                    utc=True
+                ).dt.tz_localize(None)
+
+                df.set_index('Date', inplace=True)
+
+            elif not isinstance(df.index, pd.DatetimeIndex):
+                df.index = pd.to_datetime(
+                    df.index,
+                    errors='coerce',
+                    utc=True
+                ).tz_localize(None)
+
+            # Clean data
+            df = df[~df.index.isna()]
+            df = df.sort_index()
+            df = df[~df.index.duplicated()]
+
+            print(f"[INFO] Loaded data from JSON cache: {len(df)} rows")
+
         except Exception as e:
             print(f"[WARNING] Could not load from JSON cache: {e}")
-    
-    # If no cache exists, return None
+            df = None  # fallback
+
+    # -------------------------
+    # LOAD FROM JSON BACKUP
+    # -------------------------
     if df is None or df.empty:
         if json_path.exists():
             try:
                 ingester_temp = EnhancedDataIngester()
                 all_data = ingester_temp.load_all_data(symbol)
+
                 if all_data:
                     df = all_data.get('price_history', pd.DataFrame())
-                    print(f"\n[INFO] Loaded data from JSON: {len(df)} rows")
+
+                    if not df.empty:
+                        df = normalize_datetime_index(df)
+                        print(f"[INFO] Loaded data from JSON: {len(df)} rows")
+
             except Exception as e:
                 print(f"[WARNING] Could not load from JSON: {e}")
-    
-    # If still no data, fetch fresh
+                df = None
+
+    # -------------------------
+    # FETCH LIVE DATA
+    # -------------------------
     if df is None or df.empty:
-        print(f"\n[INFO] No cached data found. Fetching fresh data for {symbol}...")
-        ingester = EnhancedDataIngester()
-        df = ingester.fetch_live_data(symbol, period="2y")
-        
-        if df.empty:
-            print(f"\n[ERROR] Could not fetch data for {symbol}")
-            return
-    
-    # Clean data - check if index is DatetimeIndex before accessing tzinfo
-    if isinstance(df.index, pd.DatetimeIndex) and df.index.tzinfo is not None:
-        df.index = df.index.tz_localize(None)
-    
-    # Calculate features
-    engineer = FeatureEngineer()
-    features_df = engineer.calculate_all_features(df, symbol)
-    
-    if not features_df.empty:
-        # Save features
-        engineer.save_features(features_df, symbol)
-        print(f"\n[OK] Technical indicators calculated and saved!")
-        print(f"Location: {FEATURE_CACHE_DIR / f'{symbol}_features.json'}")
-    else:
-        print(f"\n[ERROR] Feature calculation failed")
+        print(f"[INFO] No cached data found. Fetching fresh data for {symbol}...")
+
+        try:
+            ingester = EnhancedDataIngester()
+            df = ingester.fetch_live_data(symbol, period="2y")
+
+            if df is None or df.empty:
+                print(f"[ERROR] Could not fetch data for {symbol}")
+                return False
+
+            if not isinstance(df.index, pd.DatetimeIndex):
+                df.index = pd.to_datetime(df.index, errors='coerce')
+
+            if df.index.tz is not None:
+                df.index = df.index.tz_convert('UTC').tz_localize(None)
+                df = df[~df.index.isna()]
+                df = df.sort_index()
+                df = df[~df.index.duplicated()]
+
+        except Exception as e:
+            print(f"[ERROR] Live data fetch failed: {e}")
+            return False
+
+    # -------------------------
+    # FINAL SAFETY CHECK
+    # -------------------------
+    if df is None or df.empty:
+        print("[ERROR] No valid data available after all attempts")
+        return False
+
+    # -------------------------
+    # FEATURE CALCULATION
+    # -------------------------
+    try:
+        engineer = FeatureEngineer()
+        features_df = engineer.calculate_all_features(df, symbol)
+        # 🔥 STEP 3: Inject news sentiment into features (DETERMINISTIC)
+        features_df["news_sentiment"] = float(news_sentiment)
+
+        if features_df is not None and not features_df.empty:
+            engineer.save_features(features_df, symbol)
+
+            print("[OK] Technical indicators calculated and saved!")
+            print(f"Location: {FEATURE_CACHE_DIR / f'{symbol}_features.json'}")
+
+            return True
+        else:
+            print("[ERROR] Feature calculation failed")
+            return False
+
+    except Exception as e:
+        print(f"[ERROR] Feature engineering failed: {e}")
+        return False
 
 
 def view_technical_indicators(symbol: str):
@@ -3469,8 +3680,8 @@ def complete_analysis(symbol: str):
         return
     
     # Clean data - check if index is DatetimeIndex before accessing tzinfo
-    if isinstance(df.index, pd.DatetimeIndex) and df.index.tzinfo is not None:
-        df.index = df.index.tz_localize(None)
+    if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+        df.index = df.index.tz_convert("UTC").tz_localize(None)
     
     engineer = FeatureEngineer()
     features_df = engineer.calculate_all_features(df, symbol)
@@ -3753,11 +3964,24 @@ def train_ml_models(symbol: str, horizon: str = "intraday", verbose: bool = True
     # Extract price_history from JSON
     if 'price_history' in cached_data and cached_data['price_history']:
         df = pd.DataFrame(cached_data['price_history'])
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'])
-            df.set_index('Date', inplace=True)
-        elif df.index.name != 'Date' and not isinstance(df.index, pd.DatetimeIndex):
-            df.index = pd.to_datetime(df.index)
+
+    if 'Date' in df.columns:
+
+        df['Date'] = pd.to_datetime(
+            df['Date'],
+            utc=True,
+            errors='coerce'
+        ).dt.tz_localize(None)
+
+        df.set_index('Date', inplace=True)
+
+    elif df.index.name != 'Date' and not isinstance(df.index, pd.DatetimeIndex):
+
+        df.index = pd.to_datetime(
+            df.index,
+            utc=True,
+            errors='coerce'
+        ).tz_localize(None)
     else:
         if verbose:
             print(f"\n[ERROR] No price history found in cached data")
@@ -3785,6 +4009,7 @@ def train_ml_models(symbol: str, horizon: str = "intraday", verbose: bool = True
     X, y, feature_cols = predictor.prepare_data(features_df, target_days=target_days)
     print("[train] prepare_data done", flush=True)
     predictor.feature_columns = feature_cols
+
     
     if verbose:
         print(f"   Total samples: {len(X)}")
@@ -3845,6 +4070,9 @@ def train_ml_models(symbol: str, horizon: str = "intraday", verbose: bool = True
         print(f"   Sample feature names: {feature_cols[:5]}")
     
     # Create properly structured DataFrame for DQN with EXACT same features
+    if "news_sentiment" not in features_df.columns:
+        features_df["news_sentiment"] = 0.0
+
     dqn_features_df = features_df[feature_cols].copy()
     print("[train] DQN: data prepared", flush=True)
     
@@ -3936,7 +4164,14 @@ def train_ml_models(symbol: str, horizon: str = "intraday", verbose: bool = True
     return {"success": True, "dqn_metrics": dqn_metrics}
 
 
-def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = True):
+def predict_stock_price(
+    symbol: str,
+    horizon: str = "intraday",
+    verbose: bool = True,
+    news_data=None
+):
+    print("\n[PIPELINE] ===== START PREDICTION PIPELINE =====")
+    print(f"[PIPELINE] Symbol: {symbol} | Horizon: {horizon}")
     """
     Predict future stock price using ALL 4 trained models (RF, LightGBM, XGBoost, DQN)
     
@@ -3948,6 +4183,8 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
     Returns:
         dict: Prediction results with all model outputs and features
     """
+    
+    
     # Initialize warning flags list (used throughout the function)
     warning_flags = []
     
@@ -4044,68 +4281,94 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
         dqn_available = False
         logger.error(f"DQN loading failed for {symbol} ({horizon}): {type(e).__name__}: {e}", exc_info=True)
     
-    # Load historical 2y data + latest live prices
+        # Load historical 2y data + latest live prices
     print("[predict] load data (ingester)...", flush=True)
+
     ingester = EnhancedDataIngester()
-    
+
     if verbose:
         print(f"\n[INFO] Loading data strategy:")
         print(f"  -> Step 1: Load 2-year historical data (patterns & context)")
         print(f"  -> Step 2: Fetch latest live prices (current market)")
         print(f"  -> Step 3: Merge for comprehensive analysis")
-    
-    # Try to load 2y cached data first
+
+    # -------------------------------
+    # STEP 1: LOAD DATA (PIPELINE FIX)
+    # -------------------------------
+    print("[PIPELINE] Step 1: Loading data (JSON/cache)", flush=True)
+
     all_data = ingester.load_all_data(symbol)
-    print("[predict] load data done", flush=True)
-    
-    # Extract news data for sentiment analysis
-    news_data = all_data.get('news', []) if all_data else []
-    
-    # Check data source to determine if news is available
-    data_source = 'yfinance'  # Default
-    if all_data:
-        if 'metadata' in all_data:
-            data_source = all_data['metadata'].get('data_source', 'yfinance')
-        elif 'price_history_metadata' in all_data:
-            data_source = all_data['price_history_metadata'].get('data_source', 'yfinance')
-        else:
-            # Infer from news availability - if no news and Indian stock, likely BHAV
-            news_data_check = all_data.get('news', [])
-            if (not news_data_check or len(news_data_check) == 0) and (symbol.endswith('.NS') or symbol.endswith('.BO')):
-                # Check if news was explicitly set to empty vs just not available
-                # If metadata says has_news=False, it's BHAV
-                if all_data.get('metadata', {}).get('has_news') is False:
-                    data_source = 'nse_bhav'
-                # Otherwise assume yfinance (news might just be unavailable for other reasons)
-    
-    if all_data and 'price_history' in all_data:
-        df_historical = all_data['price_history'].copy()
+
+    # HARD FAIL if no data
+    if not all_data:
+        logger.error(f"[FAIL] No data returned for {symbol}")
+        raise ValueError(f"[CRITICAL] No data returned for {symbol}")
+
+    # Extract price history safely
+    df = all_data.get("price_history", pd.DataFrame())
+
+    if df is None or df.empty:
+        logger.error(f"[FAIL] price_history missing or empty for {symbol}")
+        raise ValueError(f"[CRITICAL] price_history missing for {symbol}")
+
+    # 🔥 CRITICAL FIX: Normalize datetime (timezone fix)
+    df = normalize_datetime_index(df)
+
+    logger.info(f"[SUCCESS] Data loaded for {symbol} | Rows: {len(df)}")
+
+    # -------------------------------
+    # NEWS DATA
+    # -------------------------------
+
+    print("\n[DEBUG] Incoming news_data:")
+    print(news_data)
+    print(type(news_data))
+
+    news_sentiment = compute_news_sentiment(news_data or [])
+
+    if verbose:
+        print(f"[INFO] News sentiment score: {news_sentiment:.4f}") 
+
+    # Detect data source
+    data_source = 'yfinance'
+    if 'metadata' in all_data:
+        data_source = all_data['metadata'].get('data_source', 'yfinance')
+    elif 'price_history_metadata' in all_data:
+        data_source = all_data['price_history_metadata'].get('data_source', 'yfinance')
+
+    # -------------------------------
+    # HISTORICAL DATA
+    # -------------------------------
+    df_historical = df.copy()
+
+    if verbose:
+        print(f"  -> [OK] Loaded {len(df_historical)} days of historical data from cache")
+
+    # -------------------------------
+    # FETCH FALLBACK (ONLY IF NEEDED)
+    # -------------------------------
+    if df_historical.empty:
         if verbose:
-            print(f"  -> [OK] Loaded {len(df_historical)} days of historical data from cache")
-    else:
-        # No cache, fetch 2y data (will fallback to NSE Bhav if yfinance fails)
-        if verbose:
-            print(f"  -> Cache not found, fetching 2y historical data (will fallback to NSE Bhav if needed)...")
+            print(f"  -> Cache empty, fetching fresh data...")
+
         df_historical = ingester.fetch_live_data(symbol, period="2y")
-        
-        # If still empty after fallback, try fetch_all_data which also has fallback
+
         if df_historical.empty:
-            if verbose:
-                print(f"  -> fetch_live_data returned empty, trying fetch_all_data with fallback...")
             try:
                 all_data_fresh = ingester.fetch_all_data(symbol, period="2y")
                 if all_data_fresh and 'price_history' in all_data_fresh:
                     df_historical = all_data_fresh['price_history']
-                    # Update all_data with fresh data
                     all_data = all_data_fresh
-                    # Update data_source
-                    if all_data and 'metadata' in all_data:
+
+                    if 'metadata' in all_data:
                         data_source = all_data['metadata'].get('data_source', 'yfinance')
+
             except Exception as e:
-                logger.error(f"fetch_all_data also failed for {symbol}: {e}")
-    
-    # Fetch latest live data (last 5 days to ensure we have today's prices)
-    # Only fetch if historical data is older than 2 days (to avoid redundant fetches)
+                logger.error(f"fetch_all_data failed for {symbol}: {e}")
+
+    # -------------------------------
+    # LATEST DATA CHECK
+    # -------------------------------
     need_latest = True
     if not df_historical.empty:
         latest_date_in_historical = df_historical.index.max()
@@ -4134,10 +4397,19 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
     # Merge: Use historical + update with latest prices
     if not df_latest.empty and not df_historical.empty:
         # Normalize timezones to naive for consistent comparison
-        if isinstance(df_historical.index, pd.DatetimeIndex) and df_historical.index.tzinfo is not None:
-            df_historical.index = df_historical.index.tz_localize(None)
-        if isinstance(df_latest.index, pd.DatetimeIndex) and df_latest.index.tzinfo is not None:
-            df_latest.index = df_latest.index.tz_localize(None)
+        if df_historical.index.tz is not None:
+            df_historical.index = (
+                df_historical.index
+                .tz_convert('UTC')
+                .tz_localize(None)
+            )
+
+        if df_latest.index.tz is not None:
+            df_latest.index = (
+                df_latest.index
+                .tz_convert('UTC')
+                .tz_localize(None)
+            )
         
         # Sort both DataFrames to ensure correct date ordering
         df_historical = df_historical.sort_index()
@@ -4189,8 +4461,8 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
         print(f"\n[INFO] Calculating technical indicators...")
     
     # Clean data before calculating features
-    if isinstance(df.index, pd.DatetimeIndex) and df.index.tzinfo is not None:
-        df.index = df.index.tz_localize(None)
+    if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+        df.index = df.index.tz_convert("UTC").tz_localize(None)
     
     features_df = engineer.calculate_all_features(df, symbol)
     print("[predict] calculate_all_features done", flush=True)
@@ -4201,6 +4473,15 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
     
     # Get latest data point for prediction
     latest_features = features_df.tail(1)
+    
+    # Inject news sentiment into prediction features
+    news_sentiment_score = compute_news_sentiment(news_data)
+    
+    latest_features["news_sentiment"] = news_sentiment_score
+    
+    # 🔥 FINAL FIX: Ensure news_sentiment exists in prediction input
+    if "news_sentiment" not in latest_features.columns:
+        latest_features["news_sentiment"] = float(news_sentiment)
     latest_price = latest_features['Close'].iloc[0]
     latest_date = latest_features.index[0]
     
@@ -4229,6 +4510,19 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
     
     # Make predictions with validation
     print("[predict] ensemble predict (RF+LGB+XGB)...", flush=True)
+    # 🔥 Ensure sentiment is included in ML model input
+    # 🔥 FINAL FIX: Align features with trained model
+    if hasattr(predictor, "feature_columns"):
+
+        # Ensure all expected model features exist
+        for col in predictor.feature_columns:
+            if col not in latest_features.columns:
+                latest_features[col] = 0.0
+
+        # Force news sentiment into prediction input
+            if "news_sentiment" in latest_features.columns:
+                latest_features.loc[:, "news_sentiment"] = news_sentiment_score
+        latest_features = latest_features[predictor.feature_columns]
     price_predictions = predictor.predict(latest_features, current_price=latest_price, historical_volatility=historical_volatility)
     print("[predict] ensemble predict done", flush=True)
     
@@ -4646,9 +4940,9 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             if data_source == 'nse_bhav':
                 model_reasons.append("News:BHAV_NOT_SUPPORTED")
             else:
-                news_sentiment = analyze_news_sentiment(news_data)
-                if news_sentiment['count'] > 0:
-                    model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
+                label = get_news_label(news_data)
+            if label:
+                model_reasons.append(f"News:{label}")
             
             # Add detailed technical indicators (show all available, not limited)
             if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
@@ -4702,9 +4996,29 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             if data_source == 'nse_bhav':
                 model_reasons.append("News:BHAV_NOT_SUPPORTED")
             else:
-                news_sentiment = analyze_news_sentiment(news_data)
-                if news_sentiment['count'] > 0:
-                    model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
+               news_analysis = analyze_news_sentiment(news_data)
+
+            # 🔥 FINAL SAFE FIX: stable sentiment handling
+            sentiment_label = "NEUTRAL"
+
+            if isinstance(news_analysis, dict):
+
+                sentiment_score = news_analysis.get("score", 0.0)
+                sentiment_count = news_analysis.get("count", 0)
+
+                if sentiment_count > 0:
+
+                    if sentiment_score > 0:
+                        sentiment_label = "POSITIVE"
+
+                elif sentiment_score < 0:
+                    sentiment_label = "NEGATIVE"
+
+                else:
+                    sentiment_label = "NEUTRAL"
+
+            model_reasons.append(f"News:{sentiment_label}")
+            logger.info(f"[NEWS] sentiment={sentiment_label}")
             
             # Add detailed technical indicators (show all available)
             if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
@@ -4778,9 +5092,10 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             if data_source == 'nse_bhav':
                 model_reasons.append("News:BHAV_NOT_SUPPORTED")
             else:
-                news_sentiment = analyze_news_sentiment(news_data)
-                if news_sentiment['count'] > 0:
-                    model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
+                news_analysis = analyze_news_sentiment(news_data)
+                label = get_news_label(news_data)
+                if label:
+                    model_reasons.append(f"News:{label}")
             
             # Add detailed technical indicators (show all available)
             if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
@@ -4823,9 +5138,10 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             if data_source == 'nse_bhav':
                 model_reasons.append("News:BHAV_NOT_SUPPORTED")
             else:
-                news_sentiment = analyze_news_sentiment(news_data)
-                if news_sentiment['count'] > 0:
-                    model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
+                news_analysis = analyze_news_sentiment(news_data)
+                label = get_news_label(news_data)
+                if label:
+                    model_reasons.append(f"News:{label}")
             
             # Add detailed technical indicators (show all available)
             if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
@@ -4930,10 +5246,10 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             if data_source == 'nse_bhav':
                 model_reasons.append("News:BHAV_NOT_SUPPORTED")
             else:
-                news_sentiment = analyze_news_sentiment(news_data)
-                if news_sentiment['count'] > 0:
-                    model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
-            
+                news_analysis = analyze_news_sentiment(news_data)
+                label = get_news_label(news_data)
+                if label:
+                    model_reasons.append(f"News:{label}")
             # Add detailed technical indicators (show all available)
             if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
                 tech_summary = tech_indicators['detailed']
@@ -4983,13 +5299,29 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
         if 'xgboost' in individual_preds:
             model_reasons.append(f"XGB:{individual_preds['xgboost']['return']:+.2f}%")
         
-        # Add news sentiment - handle BHAV data source
+        # =========================
+# FIXED NEWS SENTIMENT BLOCK
+# =========================
+
+    try:
         if data_source == 'nse_bhav':
             model_reasons.append("News:BHAV_NOT_SUPPORTED")
+            logger.info("[NEWS] BHAV source detected")
+
         else:
-            news_sentiment = analyze_news_sentiment(news_data)
-            if news_sentiment['count'] > 0:
-                model_reasons.append(f"News:{news_sentiment['sentiment'].upper()}")
+            label = get_news_label(news_data)
+
+        if label is not None:
+            model_reasons.append(f"News:{label}")
+            logger.info(f"[NEWS] Label computed: {label}")
+
+        else:
+            model_reasons.append("News:NEUTRAL")
+            logger.info("[NEWS] Defaulting to NEUTRAL")
+
+    except Exception as e:
+        logger.error(f"[NEWS ERROR] {e}")
+        model_reasons.append("News:ERROR")
         
         # Add detailed technical indicators (show all available)
         if tech_indicators.get('detailed') and tech_indicators['detailed'] != 'Limited indicators':
@@ -5011,6 +5343,21 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
             final_confidence *= 0.85
             logger.info(f"Confidence reduced due to significant capping: {original_confidence:.2%} -> {final_confidence:.2%}")
             print(f"[INFO] Confidence reduced due to prediction adjustment: {original_confidence:.0%} -> {final_confidence:.0%}")
+
+    # ===== NEWS INFLUENCE ADJUSTMENT =====
+
+    news_impact_multiplier = 1.0
+
+    if news_sentiment_score > 0.2:
+        news_impact_multiplier = 1.02
+    elif news_sentiment_score < -0.2:
+        news_impact_multiplier = 0.98
+
+    ensemble_pred = ensemble_pred * news_impact_multiplier
+
+    print(f"[NEWS IMPACT] Sentiment: {news_sentiment_score}")
+    print(f"[NEWS IMPACT] Multiplier Applied: {news_impact_multiplier}")
+    print(f"[NEWS IMPACT] Final Prediction: {ensemble_pred}")
     
     # Log the prediction (features are stored separately in data/features/)
     log_prediction(
@@ -5137,7 +5484,7 @@ def predict_stock_price(symbol: str, horizon: str = "intraday", verbose: bool = 
     if all_warnings:
         prediction_response["warnings"] = all_warnings
         prediction_response["warning"] = " | ".join(all_warnings)  # Combined for backward compatibility
-    
+        
     return prediction_response
 
 

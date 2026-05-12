@@ -479,7 +479,7 @@ async def start_sync_service(username: str, sync_interval: int = 300) -> Optiona
                 from hft_auth import get_user_demat
             except ImportError:
                 try:
-                    from backend.hft2.backend.hft_auth import get_user_demat
+                    from hft2.backend.hft2.backend.hft_auth import get_user_demat
                 except ImportError:
                     from hft2.backend.hft_auth import get_user_demat
 

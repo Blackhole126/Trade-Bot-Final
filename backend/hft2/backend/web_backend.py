@@ -5242,7 +5242,7 @@ if JWT_AVAILABLE:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
         try:
-            from backend.db.database import DatabaseManager, Holding, Portfolio, Trade
+            from hft2.backend.db.database import DatabaseManager, Holding, Portfolio, Trade
             db_manager = DatabaseManager()
             session = db_manager.Session()
 

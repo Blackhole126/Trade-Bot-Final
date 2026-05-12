@@ -6,13 +6,13 @@ from datetime import datetime
 # Adjust path to include project root (2 levels up from backend/hft)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from backend.hft.shadow_execution.fee_model import FeeModel
-from backend.hft.models.trade_event import TradeType, RiskStopReason
-from backend.hft.risk.throttling import RiskGate, VolatilityRegime
-from backend.hft.risk.limits import RiskConfig
-from backend.hft.shadow_execution.simulator import ShadowSimulator, ShadowOrder, Side, OrderStatus
-from backend.hft.tick_engine.tick_buffer import TickBuffer, Tick
-from backend.hft.reporting.karma import KarmaLogger
+from hft2.backend.hft.shadow_execution.fee_model import FeeModel
+from hft2.backend.hft.models.trade_event import TradeType, RiskStopReason
+from hft2.backend.hft.risk.throttling import RiskGate, VolatilityRegime
+from hft2.backend.hft.risk.limits import RiskConfig
+from hft2.backend.hft.shadow_execution.simulator import ShadowSimulator, ShadowOrder, Side, OrderStatus
+from hft2.backend.hft.tick_engine.tick_buffer import TickBuffer, Tick
+from hft2.backend.hft.reporting.karma import KarmaLogger
 
 def test_fee_model():
     print("\n--- Testing Fee Model ---")
@@ -91,7 +91,7 @@ def test_shadow_simulation():
 
 def test_pipeline_integration():
     print("\n--- Testing Pipeline Integration ---")
-    from backend.hft.pipeline import HFTPipeline
+    from hft2.backend.hft.pipeline import HFTPipeline
     
     pipeline = HFTPipeline()
     

@@ -4,12 +4,12 @@ from typing import List, Optional, Dict
 from enum import Enum
 import random
 
-from backend.hft.shadow_execution.fee_model import FeeModel, FeeImpactCalculator
-from backend.hft.models.trade_event import FeeBreakdown, TradeType, RiskStopReason
-from backend.hft.risk.throttling import RiskGate, VolatilityRegime
-from backend.hft.risk.limits import RiskConfig
-from backend.hft.reporting.karma import KarmaLogger
-from backend.hft.intraday.slippage_model import RegimeAwareSlippageModel, RegimeType
+from hft2.backend.hft.shadow_execution.fee_model import FeeModel, FeeImpactCalculator
+from hft2.backend.hft.models.trade_event import FeeBreakdown, TradeType, RiskStopReason
+from hft2.backend.hft.risk.throttling import RiskGate, VolatilityRegime
+from hft2.backend.hft.risk.limits import RiskConfig
+from hft2.backend.hft.reporting.karma import KarmaLogger
+from hft2.backend.hft.intraday.slippage_model import RegimeAwareSlippageModel, RegimeType
 
 
 class Side(Enum):

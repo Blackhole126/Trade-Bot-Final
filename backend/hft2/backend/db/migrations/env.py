@@ -11,7 +11,7 @@ from alembic import context
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Import the SQLAlchemy declarative Base
-from backend.db.database import Base
+from hft2.backend.db.database import Base
 
 # This is the Alembic Config object
 config = context.config

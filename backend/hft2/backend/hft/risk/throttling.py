@@ -4,8 +4,8 @@ from typing import Dict, Deque, Tuple, Optional
 from collections import deque
 import time
 
-from backend.hft.risk.limits import RiskConfig
-from backend.hft.models.trade_event import RiskStopReason
+from hft2.backend.hft.risk.limits import RiskConfig
+from backend.hft2.backend.envelopes import RiskStopReason
 
 class VolatilityRegime(Enum):
     LOW = "LOW"
